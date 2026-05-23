@@ -43,7 +43,6 @@ export async function crearOperacionAction(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  // Verificar que es usuario validado
   const { data: profile } = await supabase
     .from('profiles')
     .select('validado')
@@ -70,12 +69,11 @@ export async function crearOperacionAction(
     billetera_id: payload.billetera_id ?? null,
     boucher: payload.boucherPath ?? null,
     origen: !payload.billetera_id,
-    estatus_id: 1, // Generada
+    estatus_id: 1,
   })
 
   if (error) return { error: `Error al crear operación: ${error.message}` }
 
-  // Si paga con billetera, descontar saldo
   if (payload.billetera_id) {
     const { data: billetera } = await supabase
       .from('billeteras')
@@ -95,9 +93,10 @@ export async function crearOperacionAction(
   return { success: true, codigo }
 }
 
-export async function getOperacionesUsuario() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getOperacionesUsuario(): Promise<any[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('operaciones')
     .select(`
       *,
@@ -115,12 +114,12 @@ export async function getOperacionesUsuario() {
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
-  if (error) return []
-  return data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []) as any[]
 }
 
-// Para admin: todas las operaciones
-export async function getTodasOperaciones(estatus?: number) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getTodasOperaciones(estatus?: number): Promise<any[]> {
   const supabase = createClient()
   let query = supabase
     .from('operaciones')
@@ -142,7 +141,8 @@ export async function getTodasOperaciones(estatus?: number) {
   if (estatus) query = query.eq('estatus_id', estatus)
 
   const { data } = await query
-  return data ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []) as any[]
 }
 
 export async function actualizarEstatusOperacion(
