@@ -1,7 +1,7 @@
 // src/types/database.ts
-// Tipos TypeScript generados desde el schema de Supabase
+// Tipos TypeScript del schema Supabase — validado como number para evitar
+// restricciones excesivas en update()
 
-export type ValidadoStatus = 0 | 1 | 2 | 4
 export type UserRole = 'Admin' | 'User'
 export type ClaseCuenta = 'Persona' | 'Empresa'
 export type MonedaCode = 'CLP' | 'USD' | 'ARS' | 'COP' | 'VES' | 'PAB' | 'PEN'
@@ -28,7 +28,7 @@ export interface Database {
           nacionalidad_id: number | null
           status: boolean
           cargo: string | null
-          validado: ValidadoStatus
+          validado: number   // 0=pendiente, 1=aprobado, 2=rechazado, 4=reenviado
           role: UserRole
           foto: string | null
           documento: string | null
@@ -41,7 +41,7 @@ export interface Database {
           deleted_at: string | null
         }
         Insert: Partial<Database['public']['Tables']['profiles']['Row']> & { id: string }
-        Update: Partial<Database['public']['Tables']['profiles']['Row']>
+        Update: Partial<Omit<Database['public']['Tables']['profiles']['Row'], 'id'>>
       }
       paises: {
         Row: { id: number; nombre_pais: string; siglas: string | null; estatus: boolean; created_at: string; updated_at: string; deleted_at: string | null }
@@ -160,16 +160,16 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['billeteras_historial']['Insert']>
       }
     }
-    Views: {}
+    Views: Record<string, never>
     Functions: {
-      is_admin: { Args: {}; Returns: boolean }
-      is_validated_user: { Args: {}; Returns: boolean }
+      is_admin: { Args: Record<string, never>; Returns: boolean }
+      is_validated_user: { Args: Record<string, never>; Returns: boolean }
     }
-    Enums: {}
+    Enums: Record<string, never>
   }
 }
 
-// Tipos helpers para uso en componentes
+// Tipos helpers
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Pais = Database['public']['Tables']['paises']['Row']
 export type Banco = Database['public']['Tables']['bancos']['Row']
@@ -187,28 +187,9 @@ export type TipoCuenta = Database['public']['Tables']['tipos_cuentas']['Row']
 export type EstatusOperacion = Database['public']['Tables']['estatus_operaciones']['Row']
 export type OperacionProposito = Database['public']['Tables']['operaciones_propositos']['Row']
 
-// Tipos enriquecidos con joins
-export type OperacionConRelaciones = Operacion & {
-  estatus_operaciones: EstatusOperacion
-  tasas: Tasa
-  cuentas_destinatarios: CuentaDestinatario & {
-    destinatarios: Destinatario & { paises: Pais }
-    bancos: Banco
-    tipos_cuentas: TipoCuenta
-  }
-  operaciones_propositos: OperacionProposito
-  cuentas?: Cuenta & { bancos: Banco }
-}
-
-export type DestinatarioConCuentas = Destinatario & {
-  paises: Pais
-  cuentas_destinatarios: (CuentaDestinatario & { bancos: Banco; tipos_cuentas: TipoCuenta })[]
-}
-
-// Estado del wizard de transferencia
+// Estado del wizard
 export interface WizardState {
   step: 1 | 2 | 3 | 4
-  // Paso 1: Monto
   monedaOrigen: string
   monedaDestino: string
   montoOrigen: number | null
@@ -220,14 +201,11 @@ export interface WizardState {
   total: number
   codigoDescuento: string
   descuentoAplicado: boolean
-  // Paso 2: Destinatario
   cuentaDestinatarioId: number | null
   siglaPais: string
-  // Paso 3: Pago
   cuentaAppId: number | null
   billeteraId: number | null
   propositoId: number | null
   boucher: File | null
-  // Paso 4: Confirmación
   codigoOperacion?: string
 }

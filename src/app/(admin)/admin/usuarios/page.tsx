@@ -8,10 +8,14 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Admin · Usuarios' }
 
-async function cambiarValidado(userId: string, validado: number) {
+async function cambiarValidado(userId: string, validado: 0 | 1 | 2 | 4) {
   'use server'
   const supabase = createServiceClient()
-  await supabase.from('profiles').update({ validado }).eq('id', userId)
+  await supabase
+    .from('profiles')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update({ validado })
+    .eq('id', userId)
   revalidatePath('/admin/usuarios')
 }
 
@@ -37,13 +41,12 @@ export default async function AdminUsuariosPage() {
         <p className="text-gray-500 text-sm mt-0.5">Aprueba o rechaza solicitudes de registro</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total', value: stats.total, color: 'text-gray-900' },
-          { label: 'Pendientes', value: stats.pendientes, color: 'text-amber-600' },
-          { label: 'Aprobados', value: stats.aprobados, color: 'text-green-600' },
-          { label: 'Rechazados', value: stats.rechazados, color: 'text-red-600' },
+          { label: 'Total',      value: stats.total,      color: 'text-gray-900' },
+          { label: 'Pendientes', value: stats.pendientes,  color: 'text-amber-600' },
+          { label: 'Aprobados',  value: stats.aprobados,   color: 'text-green-600' },
+          { label: 'Rechazados', value: stats.rechazados,  color: 'text-red-600' },
         ].map(({ label, value, color }) => (
           <div key={label} className="card p-5">
             <p className="text-xs text-gray-400 mb-1">{label}</p>
@@ -52,13 +55,12 @@ export default async function AdminUsuariosPage() {
         ))}
       </div>
 
-      {/* Tabla */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                {['Nombre', 'RUT', 'Email', 'Celular', 'Registrado', 'Estado', 'Acciones'].map(h => (
+                {['Nombre', 'RUT', 'Celular', 'Registrado', 'Estado', 'Acciones'].map(h => (
                   <th key={h} className="text-left text-xs font-medium text-gray-400 px-4 py-3.5">{h}</th>
                 ))}
               </tr>
@@ -73,10 +75,9 @@ export default async function AdminUsuariosPage() {
                       <p className="text-xs text-gray-400">{u.role}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-600 font-mono text-xs">{u.rut ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{/* email viene de auth, no del profile */}—</td>
                     <td className="px-4 py-3 text-gray-600 text-xs">{u.celular ?? '—'}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      {format(new Date(u.created_at), "d MMM yyyy", { locale: es })}
+                      {format(new Date(u.created_at), 'd MMM yyyy', { locale: es })}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`badge ${color}`}>{label}</span>
