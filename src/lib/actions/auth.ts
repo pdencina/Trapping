@@ -1,6 +1,6 @@
 'use server'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const LoginSchema = z.object({
@@ -50,9 +50,10 @@ export async function loginAction(formData: FormData): Promise<void> {
 
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
-    const { data: profile } = await supabase
+    const service = createServiceClient()
+    const { data: profile } = await service
       .from('profiles').select('total_login').eq('id', user.id).single()
-    await supabase.from('profiles').update({
+    await service.from('profiles').update({
       last_login: new Date().toISOString(),
       total_login: ((profile as any)?.total_login ?? 0) + 1,
     }).eq('id', user.id)
@@ -97,7 +98,9 @@ export async function registerAction(formData: FormData): Promise<void> {
 
   if (!data.user) redirect('/register?error=' + encodeURIComponent('Error inesperado'))
 
-  await supabase.from('profiles').update({
+  // Usar service client para bypassear RLS — el usuario recién creado no tiene sesión aún
+  const service = createServiceClient()
+  await service.from('profiles').update({
     name: parsed.data.name,
     lastname: parsed.data.lastname,
     rut: parsed.data.rut,
