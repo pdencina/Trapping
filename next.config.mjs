@@ -9,9 +9,8 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverActions: { bodySizeLimit: '10mb' },
-  },
+  // Forzar que Tailwind procese correctamente en Vercel
+  transpilePackages: [],
 }
 
 export default nextConfig
