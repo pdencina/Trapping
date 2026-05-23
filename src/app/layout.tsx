@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Toaster } from 'sonner'
 import './globals.css'
+import './critical.css'
 
 export const metadata: Metadata = {
   title: { default: 'Trapping | Envío de Remesas', template: '%s | Trapping' },
