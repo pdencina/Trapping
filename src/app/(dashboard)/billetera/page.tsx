@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale'
 import Link from 'next/link'
 import { Plus, ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
 import type { Metadata } from 'next'
+import type { Billetera } from '@/types/database'
 
 export const metadata: Metadata = { title: 'Billetera' }
 
@@ -13,18 +14,30 @@ export default async function BilleteraPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: billeteras }, { data: historial }] = await Promise.all([
+  const [billeterasRes, historialRes] = await Promise.all([
     supabase.from('billeteras').select('*').eq('user_id', user!.id).is('deleted_at', null),
     supabase.from('billeteras_historial')
-      .select('*, billeteras(moneda)')
+      .select('*')
       .eq('user_id', user!.id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(20),
   ])
 
-  const tipoIcon = { recarga: ArrowDownLeft, envio: ArrowUpRight, retiro: ArrowUpRight }
-  const tipoColor = { recarga: 'text-green-600 bg-green-50', envio: 'text-red-500 bg-red-50', retiro: 'text-red-500 bg-red-50' }
+  const billeteras = (billeterasRes.data ?? []) as Billetera[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const historial = (historialRes.data ?? []) as any[]
+
+  const tipoIcon = {
+    recarga: ArrowDownLeft,
+    envio: ArrowUpRight,
+    retiro: ArrowUpRight,
+  }
+  const tipoColor = {
+    recarga: 'text-green-600 bg-green-50',
+    envio: 'text-red-500 bg-red-50',
+    retiro: 'text-red-500 bg-red-50',
+  }
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -35,9 +48,8 @@ export default async function BilleteraPage() {
         </Link>
       </div>
 
-      {/* Saldos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {billeteras?.map(b => (
+        {billeteras.map(b => (
           <div key={b.id} className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -56,17 +68,17 @@ export default async function BilleteraPage() {
         ))}
       </div>
 
-      {/* Historial */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Historial de movimientos</h2>
         <div className="card overflow-hidden">
-          {!historial?.length ? (
+          {!historial.length ? (
             <div className="p-12 text-center text-gray-400 text-sm">No hay movimientos aún</div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {historial.map((h: any) => {
-                const Icon = tipoIcon[h.tipo as keyof typeof tipoIcon] ?? RefreshCw
-                const iconColor = tipoColor[h.tipo as keyof typeof tipoColor] ?? 'text-gray-400 bg-gray-50'
+              {historial.map((h) => {
+                const tipo = h.tipo as keyof typeof tipoIcon
+                const Icon = tipoIcon[tipo] ?? RefreshCw
+                const iconColor = tipoColor[tipo] ?? 'text-gray-400 bg-gray-50'
                 return (
                   <div key={h.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconColor}`}>

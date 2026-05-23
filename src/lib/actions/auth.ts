@@ -26,7 +26,7 @@ export type ActionResult = {
   fieldErrors?: Record<string, string[]>
 }
 
-export async function loginAction(formData: FormData): Promise<ActionResult> {
+export async function loginAction(_prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const raw = {
     email: formData.get('email'),
     password: formData.get('password'),
@@ -50,21 +50,24 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     return { error: error.message }
   }
 
-  // Actualizar last_login
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
-    await supabase.from('profiles')
-      .update({
-        last_login: new Date().toISOString(),
-        total_login: (await supabase.from('profiles').select('total_login').eq('id', user.id).single()).data?.total_login ?? 0 + 1
-      })
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('total_login')
       .eq('id', user.id)
+      .single()
+
+    await supabase.from('profiles').update({
+      last_login: new Date().toISOString(),
+      total_login: (profile?.total_login ?? 0) + 1,
+    }).eq('id', user.id)
   }
 
   redirect('/dashboard')
 }
 
-export async function registerAction(formData: FormData): Promise<ActionResult> {
+export async function registerAction(_prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const raw = {
     name: formData.get('name'),
     lastname: formData.get('lastname'),
@@ -83,7 +86,6 @@ export async function registerAction(formData: FormData): Promise<ActionResult> 
 
   const supabase = createClient()
 
-  // 1. Crear usuario en auth
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -102,7 +104,6 @@ export async function registerAction(formData: FormData): Promise<ActionResult> 
 
   if (!data.user) return { error: 'Error al crear el usuario.' }
 
-  // 2. Actualizar profile con datos adicionales (el trigger ya lo creó)
   await supabase.from('profiles').update({
     name: parsed.data.name,
     lastname: parsed.data.lastname,
