@@ -1,24 +1,19 @@
-'use client'
 // src/app/(auth)/login/page.tsx
-import { useFormState, useFormStatus } from 'react-dom'
 import { loginAction } from '@/lib/actions/auth'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <button type="submit" disabled={pending} className="btn-primary w-full mt-2">
-      {pending ? 'Ingresando...' : 'Ingresar'}
-    </button>
-  )
-}
+export const metadata: Metadata = { title: 'Iniciar sesión' }
 
-export default function LoginPage() {
-  const [state, action] = useFormState(loginAction, null)
-
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: { error?: string }
+}) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 via-white to-purple-50 p-4">
       <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center">
@@ -31,10 +26,10 @@ export default function LoginPage() {
         </div>
 
         <div className="card p-8">
-          <form action={action} className="space-y-5">
-            {state?.error && (
+          <form action={loginAction} className="space-y-5">
+            {searchParams.error && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                {state.error}
+                {decodeURIComponent(searchParams.error)}
               </div>
             )}
 
@@ -48,9 +43,6 @@ export default function LoginPage() {
                 placeholder="tu@email.com"
                 className="input-field"
               />
-              {state?.fieldErrors?.email && (
-                <p className="text-xs text-red-500 mt-1">{state.fieldErrors.email[0]}</p>
-              )}
             </div>
 
             <div>
@@ -70,7 +62,9 @@ export default function LoginPage() {
               />
             </div>
 
-            <SubmitButton />
+            <button type="submit" className="btn-primary w-full mt-2">
+              Ingresar
+            </button>
           </form>
 
           <div className="mt-6 text-center">

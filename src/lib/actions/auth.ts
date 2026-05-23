@@ -1,21 +1,20 @@
 'use server'
-// src/lib/actions/auth.ts
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const LoginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Mínimo 6 caracteres'),
+  email: z.string().email(),
+  password: z.string().min(6),
 })
 
 const RegisterSchema = z.object({
-  name: z.string().min(2, 'Nombre requerido'),
-  lastname: z.string().min(2, 'Apellido requerido'),
-  email: z.string().email('Email inválido'),
-  password: z.string().min(8, 'Mínimo 8 caracteres'),
-  rut: z.string().min(7, 'RUT inválido'),
-  celular: z.string().min(8, 'Teléfono inválido'),
+  name: z.string().min(2),
+  lastname: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+  rut: z.string().min(7),
+  celular: z.string().min(8),
   tipo_documento_id: z.coerce.number().min(1),
   terms: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos' }) }),
 })
@@ -26,7 +25,7 @@ export type ActionResult = {
   fieldErrors?: Record<string, string[]>
 }
 
-export async function loginAction(_prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
+export async function loginAction(formData: FormData): Promise<void> {
   const raw = {
     email: formData.get('email'),
     password: formData.get('password'),
@@ -34,40 +33,35 @@ export async function loginAction(_prevState: ActionResult | null, formData: For
 
   const parsed = LoginSchema.safeParse(raw)
   if (!parsed.success) {
-    return { fieldErrors: parsed.error.flatten().fieldErrors }
+    redirect('/login?error=' + encodeURIComponent('Email o contraseña inválidos'))
   }
 
   const supabase = createClient()
   const { error } = await supabase.auth.signInWithPassword(parsed.data)
 
   if (error) {
-    if (error.message.includes('Invalid login')) {
-      return { error: 'Credenciales incorrectas. Verifica tu email y contraseña.' }
-    }
-    if (error.message.includes('Email not confirmed')) {
-      return { error: 'Debes verificar tu email antes de ingresar.' }
-    }
-    return { error: error.message }
+    const msg = error.message.includes('Invalid login')
+      ? 'Credenciales incorrectas'
+      : error.message.includes('Email not confirmed')
+      ? 'Debes verificar tu email primero'
+      : 'Error al ingresar'
+    redirect('/login?error=' + encodeURIComponent(msg))
   }
 
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('total_login')
-      .eq('id', user.id)
-      .single()
-
+      .from('profiles').select('total_login').eq('id', user.id).single()
     await supabase.from('profiles').update({
       last_login: new Date().toISOString(),
-      total_login: (profile?.total_login ?? 0) + 1,
+      total_login: ((profile as any)?.total_login ?? 0) + 1,
     }).eq('id', user.id)
   }
 
   redirect('/dashboard')
 }
 
-export async function registerAction(_prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
+export async function registerAction(formData: FormData): Promise<void> {
   const raw = {
     name: formData.get('name'),
     lastname: formData.get('lastname'),
@@ -81,11 +75,10 @@ export async function registerAction(_prevState: ActionResult | null, formData: 
 
   const parsed = RegisterSchema.safeParse(raw)
   if (!parsed.success) {
-    return { fieldErrors: parsed.error.flatten().fieldErrors }
+    redirect('/register?error=' + encodeURIComponent('Completa todos los campos correctamente'))
   }
 
   const supabase = createClient()
-
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -96,13 +89,13 @@ export async function registerAction(_prevState: ActionResult | null, formData: 
   })
 
   if (error) {
-    if (error.message.includes('already registered')) {
-      return { error: 'Este email ya está registrado.' }
-    }
-    return { error: error.message }
+    const msg = error.message.includes('already registered')
+      ? 'Este email ya está registrado'
+      : 'Error al crear cuenta'
+    redirect('/register?error=' + encodeURIComponent(msg))
   }
 
-  if (!data.user) return { error: 'Error al crear el usuario.' }
+  if (!data.user) redirect('/register?error=' + encodeURIComponent('Error inesperado'))
 
   await supabase.from('profiles').update({
     name: parsed.data.name,
