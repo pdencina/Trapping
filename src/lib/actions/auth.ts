@@ -1,13 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-
-const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-})
 
 const RegisterSchema = z
   .object({
@@ -19,70 +15,17 @@ const RegisterSchema = z
     rut: z.string().min(7),
     celular: z.string().min(8),
     tipo_documento_id: z.coerce.number().min(1),
-    terms: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos' }) }),
+    terms: z.literal(true),
   })
   .refine((data) => data.password === data.password_confirm, {
     message: 'Las contraseñas no coinciden',
     path: ['password_confirm'],
   })
 
-export type ActionResult = {
-  error?: string
-  success?: boolean
-  fieldErrors?: Record<string, string[]>
-}
-
-export async function loginAction(formData: FormData): Promise<void> {
-  const raw = {
-    email: formData.get('email'),
-    password: formData.get('password'),
-  }
-
-  const parsed = LoginSchema.safeParse(raw)
-  if (!parsed.success) {
-    redirect('/login?error=' + encodeURIComponent('Email o contraseña inválidos'))
-  }
-
-  const supabase = createClient()
-  const { error } = await supabase.auth.signInWithPassword(parsed.data)
-
-  if (error) {
-    const msg = error.message.includes('Invalid login')
-      ? 'Credenciales incorrectas'
-      : error.message.includes('Email not confirmed')
-      ? 'Debes verificar tu email primero'
-      : 'Error al ingresar'
-    redirect('/login?error=' + encodeURIComponent(msg))
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (user) {
-    const service = createServiceClient()
-    const { data: profile } = await service
-      .from('profiles')
-      .select('total_login')
-      .eq('id', user.id)
-      .single()
-
-    await service
-      .from('profiles')
-      .update({
-        last_login: new Date().toISOString(),
-        total_login: ((profile as any)?.total_login ?? 0) + 1,
-      })
-      .eq('id', user.id)
-  }
-
-  redirect('/dashboard')
-}
-
 function getRegisterMessage(errorMessage: string): string {
   const message = errorMessage.toLowerCase()
 
-  if (message.includes('already registered') || message.includes('already been registered')) {
+  if (message.includes('already registered')) {
     return 'Este email ya está registrado'
   }
 
@@ -90,92 +33,91 @@ function getRegisterMessage(errorMessage: string): string {
     return 'Este RUT ya está registrado'
   }
 
-  if (message.includes('duplicate key')) {
-    return 'Ya existe un registro con estos datos'
-  }
-
-  if (message.includes('violates row-level security')) {
-    return 'Error de permisos al crear el perfil'
-  }
-
-  if (message.includes('email')) {
-    return 'Error con el correo ingresado'
-  }
-
   return errorMessage || 'Error al crear cuenta'
 }
 
 export async function registerAction(formData: FormData): Promise<void> {
-  const raw = {
-    name: formData.get('name'),
-    lastname: formData.get('lastname'),
-    email: formData.get('email'),
-    password: formData.get('password'),
-    password_confirm: formData.get('password_confirm'),
-    rut: formData.get('rut'),
-    celular: formData.get('celular'),
-    tipo_documento_id: formData.get('tipo_documento_id'),
-    terms: formData.get('terms') === 'on' ? true : formData.get('terms'),
-  }
+  try {
+    const raw = {
+      name: formData.get('name'),
+      lastname: formData.get('lastname'),
+      email: formData.get('email'),
+      password: formData.get('password'),
+      password_confirm: formData.get('password_confirm'),
+      rut: formData.get('rut'),
+      celular: formData.get('celular'),
+      tipo_documento_id: formData.get('tipo_documento_id'),
+      terms: formData.get('terms') === 'on' ? true : false,
+    }
 
-  const parsed = RegisterSchema.safeParse(raw)
+    const parsed = RegisterSchema.safeParse(raw)
 
-  if (!parsed.success) {
-    const firstError =
-      parsed.error.flatten().formErrors[0] ??
-      Object.values(parsed.error.flatten().fieldErrors).flat()[0] ??
-      'Completa todos los campos correctamente'
+    if (!parsed.success) {
+      const firstError =
+        parsed.error.flatten().formErrors[0] ??
+        Object.values(parsed.error.flatten().fieldErrors).flat()[0] ??
+        'Completa todos los campos correctamente'
 
-    redirect('/register?error=' + encodeURIComponent(firstError))
-  }
+      redirect('/register?error=' + encodeURIComponent(firstError))
+    }
 
-  const supabase = createClient()
+    const supabase = createClient()
 
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-      data: { name: parsed.data.name },
-    },
-  })
-
-  if (error) {
-    console.error('Error creando usuario en auth:', error)
-    redirect('/register?error=' + encodeURIComponent(getRegisterMessage(error.message)))
-  }
-
-  if (!data.user) {
-    redirect('/register?error=' + encodeURIComponent('Error inesperado al crear usuario'))
-  }
-
-  // Usar service client para bypassear RLS: el usuario recién creado no tiene sesión aún.
-  const service = createServiceClient()
-
-  const { error: profileError } = await service
-    .from('profiles')
-    .update({
-      name: parsed.data.name,
-      lastname: parsed.data.lastname,
-      rut: parsed.data.rut,
-      celular: parsed.data.celular,
-      tipo_documento_id: parsed.data.tipo_documento_id,
-      terms: true,
-      validado: 0,
-      role: 'User',
+    const { data, error } = await supabase.auth.signUp({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+        data: {
+          name: parsed.data.name,
+        },
+      },
     })
-    .eq('id', data.user.id)
 
-  if (profileError) {
-    console.error('Error actualizando profile:', profileError)
-    redirect('/register?error=' + encodeURIComponent(getRegisterMessage(profileError.message)))
+    if (error) {
+      console.error('Error auth signup:', error)
+      redirect('/register?error=' + encodeURIComponent(getRegisterMessage(error.message)))
+    }
+
+    if (!data.user) {
+      redirect('/register?error=' + encodeURIComponent('No se pudo crear el usuario'))
+    }
+
+    const service = createServiceClient()
+
+    const { error: profileError } = await service
+      .from('profiles')
+      .update({
+        name: parsed.data.name,
+        lastname: parsed.data.lastname,
+        rut: parsed.data.rut,
+        celular: parsed.data.celular,
+        tipo_documento_id: parsed.data.tipo_documento_id,
+        terms: true,
+        validado: 0,
+        role: 'User',
+      })
+      .eq('id', data.user.id)
+
+    if (profileError) {
+      console.error('Error profile:', profileError)
+      redirect('/register?error=' + encodeURIComponent(getRegisterMessage(profileError.message)))
+    }
+
+    redirect('/verify-email')
+
+  } catch (error: any) {
+
+    // IMPORTANTE: permitir redirects de Next.js
+    if (isRedirectError(error)) {
+      throw error
+    }
+
+    console.error('REGISTER ERROR:', error)
+
+    redirect(
+      '/register?error=' +
+        encodeURIComponent(error?.message || 'Error inesperado al crear usuario')
+    )
   }
-
-  redirect('/verify-email')
-}
-
-export async function logoutAction(): Promise<void> {
-  const supabase = createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
 }
