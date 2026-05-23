@@ -1,0 +1,165 @@
+'use server'
+// src/lib/actions/operaciones.ts
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+import { generarCodigoOperacion } from '@/utils/format'
+import { z } from 'zod'
+import type { ActionResult } from './auth'
+
+const CrearOperacionSchema = z.object({
+  cuenta_destinatario_id: z.number().min(1),
+  monto_origen: z.number().positive('Monto inválido'),
+  moneda_origen: z.string().min(1),
+  tasa_id: z.number().min(1),
+  monto_destino: z.number().positive(),
+  moneda_destino: z.string().min(1),
+  proposito_id: z.number().min(1, 'Selecciona un propósito'),
+  cuenta_app_id: z.number().optional().nullable(),
+  billetera_id: z.number().optional().nullable(),
+}).refine(data => data.cuenta_app_id || data.billetera_id, {
+  message: 'Debes seleccionar una cuenta bancaria o billetera',
+})
+
+export async function crearOperacionAction(
+  payload: {
+    cuenta_destinatario_id: number
+    monto_origen: number
+    moneda_origen: string
+    tasa_id: number
+    monto_destino: number
+    moneda_destino: string
+    proposito_id: number
+    cuenta_app_id?: number | null
+    billetera_id?: number | null
+    boucherPath?: string
+  }
+): Promise<ActionResult & { codigo?: string }> {
+  const parsed = CrearOperacionSchema.safeParse(payload)
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors }
+  }
+
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // Verificar que es usuario validado
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('validado')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || profile.validado !== 1) {
+    return { error: 'Tu cuenta aún no ha sido aprobada.' }
+  }
+
+  const codigo = generarCodigoOperacion()
+
+  const { error } = await supabase.from('operaciones').insert({
+    user_id: user.id,
+    codigo_operacion: codigo,
+    cuenta_destinatario_id: payload.cuenta_destinatario_id,
+    monto_origen: payload.monto_origen,
+    moneda_origen: payload.moneda_origen,
+    tasa_id: payload.tasa_id,
+    monto_destino: payload.monto_destino,
+    moneda_destino: payload.moneda_destino,
+    proposito_id: payload.proposito_id,
+    cuenta_app_id: payload.cuenta_app_id ?? null,
+    billetera_id: payload.billetera_id ?? null,
+    boucher: payload.boucherPath ?? null,
+    origen: !payload.billetera_id,
+    estatus_id: 1, // Generada
+  })
+
+  if (error) return { error: `Error al crear operación: ${error.message}` }
+
+  // Si paga con billetera, descontar saldo
+  if (payload.billetera_id) {
+    const { data: billetera } = await supabase
+      .from('billeteras')
+      .select('saldo')
+      .eq('id', payload.billetera_id)
+      .single()
+
+    if (billetera) {
+      await supabase.from('billeteras').update({
+        saldo: billetera.saldo - payload.monto_origen
+      }).eq('id', payload.billetera_id)
+    }
+  }
+
+  revalidatePath('/operaciones')
+  revalidatePath('/dashboard')
+  return { success: true, codigo }
+}
+
+export async function getOperacionesUsuario() {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('operaciones')
+    .select(`
+      *,
+      estatus_operaciones(nombre_estatus),
+      tasas(valor, moneda_origen, moneda_destino),
+      operaciones_propositos(nombre_proposito),
+      cuentas_destinatarios(
+        numero_cuenta,
+        bancos(nombre_banco),
+        tipos_cuentas(nombre_tipo),
+        destinatarios(name, lastname, paises(nombre_pais))
+      ),
+      cuentas(numero_cuenta, bancos(nombre_banco))
+    `)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (error) return []
+  return data
+}
+
+// Para admin: todas las operaciones
+export async function getTodasOperaciones(estatus?: number) {
+  const supabase = createClient()
+  let query = supabase
+    .from('operaciones')
+    .select(`
+      *,
+      profiles(name, lastname, email, rut),
+      estatus_operaciones(nombre_estatus),
+      tasas(valor, moneda_origen, moneda_destino),
+      operaciones_propositos(nombre_proposito),
+      cuentas_destinatarios(
+        numero_cuenta,
+        bancos(nombre_banco),
+        destinatarios(name, lastname, paises(nombre_pais))
+      )
+    `)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (estatus) query = query.eq('estatus_id', estatus)
+
+  const { data } = await query
+  return data ?? []
+}
+
+export async function actualizarEstatusOperacion(
+  operacionId: number,
+  estatusId: number,
+  observaciones?: string
+): Promise<ActionResult> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('operaciones')
+    .update({ estatus_id: estatusId, observaciones: observaciones ?? null })
+    .eq('id', operacionId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/operaciones')
+  revalidatePath('/operaciones')
+  return { success: true }
+}
