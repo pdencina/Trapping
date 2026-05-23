@@ -13,8 +13,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="bg-gray-50 text-gray-900 antialiased">
+    <html
+      lang="es"
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif' }}
+    >
+      <body className="bg-gray-50 text-gray-900 antialiased font-sans">
         {children}
         <Toaster richColors position="top-right" />
       </body>
