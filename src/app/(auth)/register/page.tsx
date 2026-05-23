@@ -2,7 +2,7 @@
 import { registerAction } from '@/lib/actions/auth'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = { title: 'Crear cuenta' }
 
@@ -11,7 +11,7 @@ export default async function RegisterPage({
 }: {
   searchParams: { error?: string }
 }) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
   const { data: tiposDoc } = await supabase
     .from('tipos_documentos')
     .select('id, nombre_documento')
