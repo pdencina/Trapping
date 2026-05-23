@@ -9,8 +9,10 @@ const nextConfig = {
       },
     ],
   },
-  // Forzar que Tailwind procese correctamente en Vercel
-  transpilePackages: [],
+  // Deshabilitar partial prerendering que causa CSS vacío en el shell
+  experimental: {
+    optimizeCss: false,
+  },
 }
 
 export default nextConfig
