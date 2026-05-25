@@ -17,7 +17,7 @@ export default async function TransferirPage() {
     { data: billeteras },
     { data: propositos },
   ] = await Promise.all([
-    supabase.from('monedas').select('*, paises(nombre_pais)').is('deleted_at', null).eq('bank_origen', true),
+    supabase.from('monedas').select('*, paises(nombre_pais)').is('deleted_at', null).or('bank_origen.eq.true,bank_destino.eq.true'),
     supabase.from('tasas').select('*').is('deleted_at', null).eq('activo', true),
     supabase.from('destinatarios').select(`
       *, paises(nombre_pais, siglas),

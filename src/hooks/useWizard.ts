@@ -5,7 +5,7 @@ import type { WizardState } from '@/types/database'
 import { calcularComision, calcularMontoDestino } from '@/utils/format'
 
 const DESCUENTOS: Record<string, number> = {
-  'HELLORIA': 100, // porcentaje de descuento en comisión
+  // Descuentos sobre la comisión. Evitamos códigos 100% hardcodeados en producción.
   'TRAPPING10': 10,
 }
 
@@ -38,11 +38,34 @@ export function useWizard() {
   }, [])
 
   const setMonedaOrigen = useCallback((moneda: string) => {
-    setState(s => ({ ...s, monedaOrigen: moneda }))
+    setState(s => ({
+      ...s,
+      monedaOrigen: moneda,
+      montoOrigen: null,
+      montoDestino: null,
+      tasaId: null,
+      tasaValor: null,
+      comision: 0,
+      impuesto: 0,
+      total: 0,
+      cuentaAppId: null,
+      billeteraId: null,
+      boucher: null,
+    }))
   }, [])
 
   const setMonedaDestino = useCallback((moneda: string) => {
-    setState(s => ({ ...s, monedaDestino: moneda }))
+    setState(s => ({
+      ...s,
+      monedaDestino: moneda,
+      montoOrigen: null,
+      montoDestino: null,
+      tasaId: null,
+      tasaValor: null,
+      comision: 0,
+      impuesto: 0,
+      total: 0,
+    }))
   }, [])
 
   const setTasa = useCallback((tasa: { id: number; valor: number }) => {
@@ -51,8 +74,9 @@ export function useWizard() {
 
   const setMonto = useCallback((montoOrigen: number, tasa: { id: number; valor: number }) => {
     setState(s => {
-      const descuento = s.descuentoAplicado ? 100 : 0
-      const { comision, impuesto, neto } = calcularComision(montoOrigen, descuento === 100 ? 0 : 4)
+      const porcentaje = s.codigoDescuento ? (DESCUENTOS[s.codigoDescuento.trim().toUpperCase()] ?? 0) : 0
+      const porcentajeComision = 4 * (1 - porcentaje / 100)
+      const { comision, impuesto } = calcularComision(montoOrigen, porcentajeComision)
       const montoDestino = calcularMontoDestino(montoOrigen, tasa.valor, comision)
       return {
         ...s,
@@ -78,7 +102,7 @@ export function useWizard() {
           : s.montoDestino
         return {
           ...s,
-          codigoDescuento: codigo,
+          codigoDescuento: clean,
           descuentoAplicado: true,
           comision,
           impuesto,

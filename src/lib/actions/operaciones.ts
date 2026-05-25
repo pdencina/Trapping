@@ -8,18 +8,26 @@ import type { ActionResult } from './auth'
 import type { Profile, Billetera } from '@/types/database'
 
 const CrearOperacionSchema = z.object({
-  cuenta_destinatario_id: z.number().min(1),
-  monto_origen: z.number().positive(),
-  moneda_origen: z.string().min(1),
-  tasa_id: z.number().min(1),
-  monto_destino: z.number().positive(),
-  moneda_destino: z.string().min(1),
-  proposito_id: z.number().min(1),
+  cuenta_destinatario_id: z.number().min(1, 'Selecciona una cuenta de destino'),
+  monto_origen: z.number().positive('Ingresa un monto válido'),
+  moneda_origen: z.string().min(1, 'Selecciona moneda origen'),
+  tasa_id: z.number().min(1, 'Selecciona una tasa válida'),
+  monto_destino: z.number().positive('El monto destino debe ser mayor a cero'),
+  moneda_destino: z.string().min(1, 'Selecciona moneda destino'),
+  proposito_id: z.number().min(1, 'Selecciona el propósito del envío'),
   cuenta_app_id: z.number().optional().nullable(),
   billetera_id: z.number().optional().nullable(),
-}).refine(d => d.cuenta_app_id || d.billetera_id, {
-  message: 'Debes seleccionar una cuenta bancaria o billetera',
+  boucherPath: z.string().optional().nullable(),
+}).refine(d => Boolean(d.cuenta_app_id) !== Boolean(d.billetera_id), {
+  message: 'Selecciona solo un método de pago: cuenta bancaria o billetera',
+}).refine(d => !d.cuenta_app_id || !!d.boucherPath, {
+  message: 'Debes adjuntar el comprobante de pago',
 })
+
+function toMoney(value: unknown): number {
+  const numberValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numberValue) ? numberValue : 0
+}
 
 export async function crearOperacionAction(payload: {
   cuenta_destinatario_id: number
@@ -31,55 +39,174 @@ export async function crearOperacionAction(payload: {
   proposito_id: number
   cuenta_app_id?: number | null
   billetera_id?: number | null
-  boucherPath?: string
+  boucherPath?: string | null
 }): Promise<ActionResult & { codigo?: string }> {
   const parsed = CrearOperacionSchema.safeParse(payload)
-  if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors }
+
+  if (!parsed.success) {
+    const firstError =
+      parsed.error.flatten().formErrors[0] ||
+      Object.values(parsed.error.flatten().fieldErrors).flat()[0] ||
+      'Revisa los datos de la operación'
+
+    return { error: firstError, fieldErrors: parsed.error.flatten().fieldErrors }
+  }
 
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
   if (!user) return { error: 'No autenticado' }
 
   const { data: profileData } = await supabase
-    .from('profiles').select('validado').eq('id', user.id).single()
+    .from('profiles')
+    .select('validado')
+    .eq('id', user.id)
+    .single()
+
   const profile = profileData as Pick<Profile, 'validado'> | null
 
-  if (!profile || profile.validado !== 1) return { error: 'Tu cuenta aún no ha sido aprobada.' }
+  if (!profile || profile.validado !== 1) {
+    return { error: 'Tu cuenta aún no ha sido aprobada por un administrador.' }
+  }
+
+  const { data: tasaData, error: tasaError } = await supabase
+    .from('tasas')
+    .select('id, moneda_origen, moneda_destino, monto_minimo, monto_maximo, activo')
+    .eq('id', parsed.data.tasa_id)
+    .eq('activo', true)
+    .is('deleted_at', null)
+    .single()
+
+  if (tasaError || !tasaData) return { error: 'La tasa seleccionada ya no está disponible.' }
+
+  const tasa = tasaData as {
+    moneda_origen: string
+    moneda_destino: string
+    monto_minimo: number | null
+    monto_maximo: number | null
+    activo: boolean
+  }
+
+  if (tasa.moneda_origen !== parsed.data.moneda_origen || tasa.moneda_destino !== parsed.data.moneda_destino) {
+    return { error: 'La tasa seleccionada no coincide con las monedas de la operación.' }
+  }
+
+  const minimo = toMoney(tasa.monto_minimo)
+  const maximo = toMoney(tasa.monto_maximo)
+
+  if (minimo > 0 && parsed.data.monto_origen < minimo) {
+    return { error: `El monto mínimo para esta tasa es ${minimo} ${parsed.data.moneda_origen}.` }
+  }
+
+  if (maximo > 0 && parsed.data.monto_origen > maximo) {
+    return { error: `El monto máximo para esta tasa es ${maximo} ${parsed.data.moneda_origen}.` }
+  }
+
+  const { data: cuentaDestino } = await supabase
+    .from('cuentas_destinatarios')
+    .select('id, destinatarios!inner(user_id, deleted_at, estatus)')
+    .eq('id', parsed.data.cuenta_destinatario_id)
+    .eq('destinatarios.user_id', user.id)
+    .eq('destinatarios.estatus', true)
+    .is('destinatarios.deleted_at', null)
+    .single()
+
+  if (!cuentaDestino) return { error: 'La cuenta de destino no pertenece a tu usuario o no está disponible.' }
+
+  if (parsed.data.cuenta_app_id) {
+    const { data: cuentaApp } = await supabase
+      .from('cuentas')
+      .select('id')
+      .eq('id', parsed.data.cuenta_app_id)
+      .eq('estatus', true)
+      .is('deleted_at', null)
+      .single()
+
+    if (!cuentaApp) return { error: 'La cuenta bancaria de Trapping seleccionada no está disponible.' }
+  }
+
+  if (parsed.data.billetera_id) {
+    const { data: bData } = await supabase
+      .from('billeteras')
+      .select('id, user_id, moneda, saldo')
+      .eq('id', parsed.data.billetera_id)
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .single()
+
+    const billetera = bData as Pick<Billetera, 'id' | 'moneda' | 'saldo'> | null
+
+    if (!billetera) return { error: 'La billetera seleccionada no está disponible.' }
+
+    if (billetera.moneda !== parsed.data.moneda_origen) {
+      return { error: `La billetera seleccionada es ${billetera.moneda}, pero la operación está en ${parsed.data.moneda_origen}.` }
+    }
+
+    if (toMoney(billetera.saldo) < parsed.data.monto_origen) {
+      return { error: 'Saldo insuficiente en tu billetera para realizar esta operación.' }
+    }
+  }
 
   const codigo = generarCodigoOperacion()
 
-  const { error } = await supabase.from('operaciones').insert({
-    user_id: user.id,
-    codigo_operacion: codigo,
-    cuenta_destinatario_id: payload.cuenta_destinatario_id,
-    monto_origen: payload.monto_origen,
-    moneda_origen: payload.moneda_origen,
-    tasa_id: payload.tasa_id,
-    monto_destino: payload.monto_destino,
-    moneda_destino: payload.moneda_destino,
-    proposito_id: payload.proposito_id,
-    cuenta_app_id: payload.cuenta_app_id ?? null,
-    billetera_id: payload.billetera_id ?? null,
-    boucher: payload.boucherPath ?? null,
-    origen: !payload.billetera_id,
-    estatus_id: 1,
-  })
+  const { data: operacionData, error: insertError } = await supabase
+    .from('operaciones')
+    .insert({
+      user_id: user.id,
+      codigo_operacion: codigo,
+      cuenta_destinatario_id: parsed.data.cuenta_destinatario_id,
+      monto_origen: parsed.data.monto_origen,
+      moneda_origen: parsed.data.moneda_origen,
+      tasa_id: parsed.data.tasa_id,
+      monto_destino: parsed.data.monto_destino,
+      moneda_destino: parsed.data.moneda_destino,
+      proposito_id: parsed.data.proposito_id,
+      cuenta_app_id: parsed.data.cuenta_app_id ?? null,
+      billetera_id: parsed.data.billetera_id ?? null,
+      boucher: parsed.data.boucherPath ?? null,
+      origen: !parsed.data.billetera_id,
+      estatus_id: 1,
+    })
+    .select('id')
+    .single()
 
-  if (error) return { error: `Error al crear operación: ${error.message}` }
+  if (insertError || !operacionData) {
+    return { error: `Error al crear operación: ${insertError?.message ?? 'No se pudo crear la operación'}` }
+  }
 
-  if (payload.billetera_id) {
+  if (parsed.data.billetera_id) {
     const { data: bData } = await supabase
-      .from('billeteras').select('saldo').eq('id', payload.billetera_id).single()
-    const billetera = bData as Pick<Billetera, 'saldo'> | null
-    if (billetera) {
-      await supabase.from('billeteras')
-        .update({ saldo: billetera.saldo - payload.monto_origen })
-        .eq('id', payload.billetera_id)
+      .from('billeteras')
+      .select('saldo')
+      .eq('id', parsed.data.billetera_id)
+      .eq('user_id', user.id)
+      .single()
+
+    const saldoActual = toMoney((bData as Pick<Billetera, 'saldo'> | null)?.saldo)
+
+    if (saldoActual < parsed.data.monto_origen) {
+      await supabase.from('operaciones').delete().eq('id', operacionData.id).eq('user_id', user.id)
+      return { error: 'Saldo insuficiente en tu billetera para realizar esta operación.' }
+    }
+
+    const nuevoSaldo = saldoActual - parsed.data.monto_origen
+
+    const { error: billeteraError } = await supabase
+      .from('billeteras')
+      .update({ saldo: nuevoSaldo })
+      .eq('id', parsed.data.billetera_id)
+      .eq('user_id', user.id)
+
+    if (billeteraError) {
+      await supabase.from('operaciones').delete().eq('id', operacionData.id).eq('user_id', user.id)
+      return { error: `No se pudo descontar el saldo de la billetera: ${billeteraError.message}` }
     }
   }
 
   revalidatePath('/operaciones')
   revalidatePath('/dashboard')
+  revalidatePath('/billetera')
+
   return { success: true, codigo }
 }
 
