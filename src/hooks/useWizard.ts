@@ -5,7 +5,7 @@ import type { WizardState } from '@/types/database'
 import { calcularComision, calcularMontoDestino } from '@/utils/format'
 
 const DESCUENTOS: Record<string, number> = {
-  // Descuentos sobre la comisión. Evitamos códigos 100% hardcodeados en producción.
+  'HELLORIA': 100, // porcentaje de descuento en comisión
   'TRAPPING10': 10,
 }
 
@@ -50,7 +50,6 @@ export function useWizard() {
       total: 0,
       cuentaAppId: null,
       billeteraId: null,
-      boucher: null,
     }))
   }, [])
 
@@ -58,13 +57,9 @@ export function useWizard() {
     setState(s => ({
       ...s,
       monedaDestino: moneda,
-      montoOrigen: null,
       montoDestino: null,
       tasaId: null,
       tasaValor: null,
-      comision: 0,
-      impuesto: 0,
-      total: 0,
     }))
   }, [])
 
@@ -74,9 +69,8 @@ export function useWizard() {
 
   const setMonto = useCallback((montoOrigen: number, tasa: { id: number; valor: number }) => {
     setState(s => {
-      const porcentaje = s.codigoDescuento ? (DESCUENTOS[s.codigoDescuento.trim().toUpperCase()] ?? 0) : 0
-      const porcentajeComision = 4 * (1 - porcentaje / 100)
-      const { comision, impuesto } = calcularComision(montoOrigen, porcentajeComision)
+      const descuento = s.descuentoAplicado ? 100 : 0
+      const { comision, impuesto, neto } = calcularComision(montoOrigen, descuento === 100 ? 0 : 4)
       const montoDestino = calcularMontoDestino(montoOrigen, tasa.valor, comision)
       return {
         ...s,
@@ -102,7 +96,7 @@ export function useWizard() {
           : s.montoDestino
         return {
           ...s,
-          codigoDescuento: clean,
+          codigoDescuento: codigo,
           descuentoAplicado: true,
           comision,
           impuesto,
@@ -121,15 +115,15 @@ export function useWizard() {
   const setPago = useCallback((pago: {
     cuentaAppId?: number | null
     billeteraId?: number | null
-    propositoId: number
+    propositoId?: number | null
     boucher?: File | null
   }) => {
     setState(s => ({
       ...s,
-      cuentaAppId: pago.cuentaAppId ?? null,
-      billeteraId: pago.billeteraId ?? null,
-      propositoId: pago.propositoId,
-      boucher: pago.boucher ?? null,
+      cuentaAppId: pago.cuentaAppId !== undefined ? pago.cuentaAppId : s.cuentaAppId,
+      billeteraId: pago.billeteraId !== undefined ? pago.billeteraId : s.billeteraId,
+      propositoId: pago.propositoId !== undefined ? pago.propositoId : s.propositoId,
+      boucher: pago.boucher !== undefined ? pago.boucher : s.boucher,
     }))
   }, [])
 

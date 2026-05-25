@@ -7,6 +7,7 @@ export const metadata: Metadata = { title: 'Transferir' }
 
 export default async function TransferirPage() {
   const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Cargar todos los datos que el wizard necesita de una sola vez (Server Component)
   const [
@@ -17,14 +18,19 @@ export default async function TransferirPage() {
     { data: billeteras },
     { data: propositos },
   ] = await Promise.all([
-    supabase.from('monedas').select('*, paises(nombre_pais)').is('deleted_at', null).or('bank_origen.eq.true,bank_destino.eq.true'),
+    supabase
+      .from('monedas')
+      .select('*, paises(nombre_pais)')
+      .is('deleted_at', null)
+      .or('bank_origen.eq.true,bank_destino.eq.true')
+      .order('acronimo'),
     supabase.from('tasas').select('*').is('deleted_at', null).eq('activo', true),
     supabase.from('destinatarios').select(`
       *, paises(nombre_pais, siglas),
       cuentas_destinatarios(*, bancos(nombre_banco, pais_id), tipos_cuentas(nombre_tipo))
-    `).is('deleted_at', null).eq('estatus', true).order('favorito', { ascending: false }),
+    `).eq('user_id', user?.id ?? '').is('deleted_at', null).eq('estatus', true).order('favorito', { ascending: false }),
     supabase.from('cuentas').select('*, bancos(nombre_banco), tipos_cuentas(nombre_tipo)').is('deleted_at', null).eq('estatus', true),
-    supabase.from('billeteras').select('*').is('deleted_at', null),
+    supabase.from('billeteras').select('*').eq('user_id', user?.id ?? '').is('deleted_at', null),
     supabase.from('operaciones_propositos').select('*').is('deleted_at', null),
   ])
 

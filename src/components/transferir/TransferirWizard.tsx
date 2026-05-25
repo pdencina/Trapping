@@ -6,7 +6,7 @@ import { useWizard } from '@/hooks/useWizard'
 import { crearOperacionAction } from '@/lib/actions/operaciones'
 import { formatMoneda, formatMonto } from '@/utils/format'
 import { createClient } from '@/lib/supabase/client'
-import { AlertCircle, CheckCircle2, ChevronRight, Copy, Upload, Star } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Upload, Star } from 'lucide-react'
 import { cn } from '@/utils/format'
 import type { Moneda, Tasa, Billetera, OperacionProposito } from '@/types/database'
 
@@ -28,38 +28,6 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
   const [boucherFile, setBoucherFile] = useState<File | null>(null)
   const [codigoOperacion, setCodigoOperacion] = useState<string | null>(null)
 
-  const MAX_COMPROBANTE_MB = 10
-  const COMPROBANTE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
-
-  const cuentaSeleccionada = cuentasApp.find((c: any) => c.id === state.cuentaAppId)
-  const billeteraSeleccionada = billeteras.find(b => b.id === state.billeteraId)
-
-  const handleComprobanteChange = (file?: File) => {
-    if (!file) {
-      setBoucherFile(null)
-      return
-    }
-
-    if (!COMPROBANTE_TYPES.includes(file.type)) {
-      toast.error('El comprobante debe ser JPG, PNG o PDF')
-      setBoucherFile(null)
-      return
-    }
-
-    if (file.size > MAX_COMPROBANTE_MB * 1024 * 1024) {
-      toast.error(`El comprobante no puede superar ${MAX_COMPROBANTE_MB}MB`)
-      setBoucherFile(null)
-      return
-    }
-
-    setBoucherFile(file)
-  }
-
-  const copiarCuenta = async (texto: string) => {
-    await navigator.clipboard.writeText(texto)
-    toast.success('Dato copiado')
-  }
-
   // Helpers
   const getTasa = (from: string, to: string) =>
     tasas.find(t => t.moneda_origen === from && t.moneda_destino === to && t.activo)
@@ -70,7 +38,35 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
     const num = parseFloat(v.replace(/\./g, '').replace(',', '.'))
     if (!isNaN(num) && tasa) {
       setMonto(num, { id: tasa.id, valor: tasa.valor })
+      return
     }
+    if (!v.trim() && tasa) {
+      setMonto(0, { id: tasa.id, valor: tasa.valor })
+    }
+  }
+
+  const handleFileChange = (file?: File) => {
+    if (!file) {
+      setBoucherFile(null)
+      setPago({ boucher: null })
+      return
+    }
+
+    const validTypes = ['image/jpeg', 'image/png', 'application/pdf']
+    const maxSize = 10 * 1024 * 1024
+
+    if (!validTypes.includes(file.type)) {
+      toast.error('El comprobante debe ser JPG, PNG o PDF')
+      return
+    }
+
+    if (file.size > maxSize) {
+      toast.error('El comprobante no puede superar 10MB')
+      return
+    }
+
+    setBoucherFile(file)
+    setPago({ boucher: file })
   }
 
   const handleDescuento = () => {
@@ -80,35 +76,18 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
   }
 
   const handleSubmit = async () => {
-    if (!state.montoOrigen || !state.tasaId || !state.cuentaDestinatarioId || !state.propositoId) {
-      toast.error('Completa todos los datos antes de confirmar')
-      return
-    }
-
-    if (state.cuentaAppId && !boucherFile) {
-      toast.error('Debes adjuntar el comprobante de pago')
-      return
-    }
-
-    if (state.billeteraId && billeteraSeleccionada && billeteraSeleccionada.saldo < state.montoOrigen) {
-      toast.error('Saldo insuficiente en tu billetera')
-      return
-    }
-
+    if (!state.montoOrigen || !state.tasaId || !state.cuentaDestinatarioId || !state.propositoId) return
     setLoading(true)
 
     let boucherPath: string | undefined
     if (boucherFile && state.cuentaAppId) {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { toast.error('Sesión no encontrada'); setLoading(false); return }
+      if (!user) { toast.error('No autenticado'); setLoading(false); return }
       const ext = boucherFile.name.split('.').pop()?.toLowerCase() ?? 'pdf'
-      const path = `${user.id}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('bouchers').upload(path, boucherFile, {
-        contentType: boucherFile.type,
-        upsert: false,
-      })
-      if (error) { toast.error('Error subiendo comprobante'); setLoading(false); return }
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage.from('bouchers').upload(path, boucherFile, { upsert: false })
+      if (error) { toast.error(`Error subiendo comprobante: ${error.message}`); setLoading(false); return }
       boucherPath = path
     }
 
@@ -191,7 +170,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Moneda origen</label>
               <select className="input-field" value={state.monedaOrigen}
-                onChange={e => { setMonedaOrigen(e.target.value); setBoucherFile(null) }}>
+                onChange={e => setMonedaOrigen(e.target.value)}>
                 {monedas.filter(m => m.bank_origen).map(m => (
                   <option key={m.acronimo} value={m.acronimo}>{m.acronimo} — {m.moneda}</option>
                 ))}
@@ -200,7 +179,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Moneda destino</label>
               <select className="input-field" value={state.monedaDestino}
-                onChange={e => { setMonedaDestino(e.target.value); setBoucherFile(null) }}>
+                onChange={e => setMonedaDestino(e.target.value)}>
                 {monedas.filter(m => m.bank_destino && m.acronimo !== state.monedaOrigen).map(m => (
                   <option key={m.acronimo} value={m.acronimo}>{m.acronimo} — {m.moneda}</option>
                 ))}
@@ -258,7 +237,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Código de descuento (opcional)</label>
             <div className="flex gap-2">
-              <input type="text" className="input-field flex-1" placeholder="TRAPPING10"
+              <input type="text" className="input-field flex-1" placeholder="HELLORIA"
                 value={codigoInput} onChange={e => setCodigoInput(e.target.value.toUpperCase())} />
               <button onClick={handleDescuento} className="btn-secondary px-3 text-sm">Aplicar</button>
             </div>
@@ -282,7 +261,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
           {destinatarios.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm mb-3">No tienes contactos aún</p>
-              <a href="/contactos/nuevo" className="btn-primary text-sm">Agregar contacto</a>
+              <a href="/contactos?nuevo=1" className="btn-primary text-sm">Agregar contacto</a>
             </div>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
@@ -334,7 +313,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Propósito del envío</label>
             <select className="input-field"
               value={state.propositoId ?? ''}
-              onChange={e => setPago({ propositoId: Number(e.target.value), cuentaAppId: state.cuentaAppId, billeteraId: state.billeteraId, boucher: boucherFile })}>
+              onChange={e => setPago({ propositoId: Number(e.target.value) || null })}>
               <option value="">Seleccionar...</option>
               {propositos.map(p => <option key={p.id} value={p.id}>{p.nombre_proposito}</option>)}
             </select>
@@ -347,8 +326,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
               <div className="space-y-2">
                 {billeteras.map(b => (
                   <button key={b.id}
-                    onClick={() => setPago({ billeteraId: b.id, cuentaAppId: null, propositoId: state.propositoId ?? 0 })}
-                    disabled={!!state.montoOrigen && b.saldo < state.montoOrigen}
+                    onClick={() => { setBoucherFile(null); setPago({ billeteraId: b.id, cuentaAppId: null, boucher: null }) }}
                     className={cn(
                       'w-full text-left p-3.5 rounded-xl border text-sm transition-all',
                       state.billeteraId === b.id
@@ -358,11 +336,6 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
                   >
                     <span className="font-medium">{b.moneda}</span>
                     <span className="text-gray-500 ml-2">Saldo: {formatMoneda(b.saldo, b.moneda)}</span>
-                    {state.montoOrigen && b.saldo < state.montoOrigen && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-red-500">
-                        <AlertCircle size={12} /> Saldo insuficiente
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>
@@ -376,7 +349,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
               <div className="space-y-2">
                 {cuentasApp.map((c: any) => (
                   <button key={c.id}
-                    onClick={() => setPago({ cuentaAppId: c.id, billeteraId: null, propositoId: state.propositoId ?? 0 })}
+                    onClick={() => setPago({ cuentaAppId: c.id, billeteraId: null })}
                     className={cn(
                       'w-full text-left p-3.5 rounded-xl border text-sm transition-all',
                       state.cuentaAppId === c.id
@@ -391,30 +364,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
                 ))}
               </div>
 
-              {/* Datos de cuenta Trapping + comprobante si seleccionó cuenta */}
-              {state.cuentaAppId && cuentaSeleccionada && (
-                <div className="mt-3 rounded-xl border border-brand-100 bg-brand-50 p-4 text-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-brand-900">Datos para transferir</p>
-                      <p className="mt-1 text-gray-700">{cuentaSeleccionada.razon_social || `${cuentaSeleccionada.name ?? ''} ${cuentaSeleccionada.lastname ?? ''}`.trim() || 'Trapping SPA'}</p>
-                      <p className="text-gray-600">RUT: {cuentaSeleccionada.rut ?? 'No informado'}</p>
-                      <p className="text-gray-600">Banco: {cuentaSeleccionada.bancos?.nombre_banco}</p>
-                      <p className="text-gray-600">Tipo: {cuentaSeleccionada.tipos_cuentas?.nombre_tipo}</p>
-                      <p className="text-gray-600">N° cuenta: {cuentaSeleccionada.numero_cuenta}</p>
-                      {cuentaSeleccionada.email && <p className="text-gray-600">Email: {cuentaSeleccionada.email}</p>}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => copiarCuenta(cuentaSeleccionada.numero_cuenta)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-xs font-medium text-brand-700 border border-brand-100 hover:bg-brand-100"
-                    >
-                      <Copy size={14} /> Copiar cuenta
-                    </button>
-                  </div>
-                </div>
-              )}
-
+              {/* Upload comprobante si seleccionó cuenta */}
               {state.cuentaAppId && (
                 <div className="mt-3">
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">
@@ -429,7 +379,7 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
                       {boucherFile ? boucherFile.name : 'JPG, PNG o PDF · máx 10MB'}
                     </span>
                     <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf"
-                      onChange={e => handleComprobanteChange(e.target.files?.[0])} />
+                      onChange={e => handleFileChange(e.target.files?.[0])} />
                   </label>
                 </div>
               )}
@@ -456,10 +406,10 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
 
           <div className="bg-gray-50 rounded-xl divide-y divide-gray-100">
             {[
-              ['Enviás', formatMoneda(state.montoOrigen ?? 0, state.monedaOrigen)],
+              ['Envías', formatMoneda(state.montoOrigen ?? 0, state.monedaOrigen)],
               ['Recibe', formatMoneda(state.montoDestino ?? 0, state.monedaDestino)],
               ['Comisión', formatMoneda(state.comision, state.monedaOrigen)],
-              ['Pago', state.billeteraId ? `Billetera ${state.monedaOrigen}` : 'Transferencia bancaria con comprobante'],
+              ['Pago', state.billeteraId ? `Billetera ${state.monedaOrigen}` : 'Transferencia bancaria'],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between px-4 py-3 text-sm">
                 <span className="text-gray-500">{k}</span>

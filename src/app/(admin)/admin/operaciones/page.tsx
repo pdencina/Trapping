@@ -63,7 +63,7 @@ export default async function AdminOperacionesPage() {
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900 text-xs">{profile?.name} {profile?.lastname}</p>
-                      <p className="text-gray-400 text-xs">{profile?.email}</p>
+                      <p className="text-gray-400 text-xs">{profile?.rut}</p>
                     </td>
                     <td className="px-4 py-3 text-xs">
                       <p className="font-medium">{dest?.name} {dest?.lastname}</p>
