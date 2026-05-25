@@ -22,7 +22,7 @@ const statusMap: any = {
 }
 
 export default function KYCBadge({ status }: { status: keyof typeof statusMap }) {
-  const item = statusMap[status]
+  const item = statusMap[status] ?? statusMap.pending_review
 
   return (
     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${item.className}`}>
