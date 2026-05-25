@@ -120,40 +120,34 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-6 py-7">
-      <div className="mx-auto max-w-[1680px] space-y-6">
+    <div className="w-full overflow-x-hidden">
+      <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-950">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-950">
             Usuarios
           </h1>
-          <p className="mt-1 text-base text-slate-500">
+          <p className="mt-1 text-sm text-slate-500">
             Administra solicitudes KYC y validación de usuarios.
           </p>
         </div>
 
-        <div
-          className="gap-5"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-          }}
-        >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
             >
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-slate-500">{item.label}</p>
-                  <p className={`mt-4 text-5xl font-extrabold ${item.valueClass}`}>
+                  <p className={`mt-3 text-4xl font-extrabold ${item.valueClass}`}>
                     {item.value}
                   </p>
-                  <p className="mt-4 text-sm text-slate-500">{item.description}</p>
+                  <p className="mt-3 text-sm text-slate-500">{item.description}</p>
                 </div>
 
                 <div
-                  className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-3xl font-bold ${item.iconClass}`}
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl font-bold ${item.iconClass}`}
                 >
                   {item.icon}
                 </div>
@@ -162,19 +156,19 @@ export default function UsuariosPage() {
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-1 items-center gap-3">
-            <div className="relative w-full max-w-xl">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl text-slate-400">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_240px_140px] xl:max-w-4xl">
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate-400">
                 ⌕
               </span>
               <input
-                className="h-14 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
                 placeholder="Buscar usuario por nombre, email o celular..."
               />
             </div>
 
-            <select className="h-14 w-64 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100">
+            <select className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100">
               <option>Todos los estados</option>
               <option>En revisión</option>
               <option>Documentación pendiente</option>
@@ -183,29 +177,29 @@ export default function UsuariosPage() {
               <option>Suspendido</option>
             </select>
 
-            <button className="h-14 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+            <button className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
               Más filtros
             </button>
           </div>
 
-          <button className="h-14 rounded-xl border border-violet-300 bg-white px-7 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
+          <button className="h-12 rounded-xl border border-violet-300 bg-white px-6 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
             ↓ Exportar
           </button>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1220px] text-sm">
+            <table className="w-full min-w-[1160px] text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-white text-left">
-                  <th className="px-6 py-5 font-extrabold text-slate-800">Usuario</th>
-                  <th className="px-6 py-5 font-extrabold text-slate-800">Contacto</th>
-                  <th className="px-6 py-5 font-extrabold text-slate-800">Registrado</th>
-                  <th className="px-6 py-5 font-extrabold text-slate-800">Estado KYC</th>
-                  <th className="px-6 py-5 font-extrabold text-slate-800">Email verificado</th>
-                  <th className="px-6 py-5 font-extrabold text-slate-800">% Perfil</th>
-                  <th className="px-6 py-5 font-extrabold text-slate-800">Operaciones</th>
-                  <th className="px-6 py-5 font-extrabold text-slate-800">Acciones</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">Usuario</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">Contacto</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">Registrado</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">Estado KYC</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">Email verificado</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">% Perfil</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">Operaciones</th>
+                  <th className="px-5 py-4 font-extrabold text-slate-800">Acciones</th>
                 </tr>
               </thead>
 
@@ -215,11 +209,11 @@ export default function UsuariosPage() {
                     key={user.email}
                     className="border-b border-slate-100 transition hover:bg-slate-50/70"
                   >
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
                           <div
-                            className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-extrabold ${user.avatarClass}`}
+                            className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-extrabold ${user.avatarClass}`}
                           >
                             {user.initials}
                           </div>
@@ -238,19 +232,19 @@ export default function UsuariosPage() {
                       </div>
                     </td>
 
-                    <td className="px-6 py-5 text-slate-700">
+                    <td className="px-5 py-4 text-slate-700">
                       <div className="flex items-center gap-2">
                         <span className="text-slate-400">☎</span>
                         <span>{user.phone}</span>
                       </div>
                     </td>
 
-                    <td className="px-6 py-5 text-slate-700">
+                    <td className="px-5 py-4 text-slate-700">
                       <p>{user.date}</p>
                       <p className="mt-1 text-slate-500">{user.time}</p>
                     </td>
 
-                    <td className="px-6 py-5">
+                    <td className="px-5 py-4">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${kycClass(user.kyc)}`}
                       >
@@ -259,7 +253,7 @@ export default function UsuariosPage() {
                       <p className="mt-2 text-xs text-slate-500">{user.kycDetail}</p>
                     </td>
 
-                    <td className="px-6 py-5">
+                    <td className="px-5 py-4">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${emailClass(user.emailStatus)}`}
                       >
@@ -268,14 +262,14 @@ export default function UsuariosPage() {
                       <p className="mt-2 text-xs text-slate-500">{user.emailDate}</p>
                     </td>
 
-                    <td className="px-6 py-5">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-violet-600 bg-white text-xs font-extrabold text-slate-800">
+                    <td className="px-5 py-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-violet-600 bg-white text-xs font-extrabold text-slate-800">
                         {user.percent}%
                       </div>
                     </td>
 
-                    <td className="px-6 py-5">
-                      <div className="flex w-24 flex-col items-center">
+                    <td className="px-5 py-4">
+                      <div className="flex w-20 flex-col items-center">
                         <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-violet-100 px-2 text-sm font-extrabold text-violet-700">
                           {user.operations}
                         </span>
@@ -283,7 +277,7 @@ export default function UsuariosPage() {
                       </div>
                     </td>
 
-                    <td className="px-6 py-5">
+                    <td className="px-5 py-4">
                       <div className="flex flex-wrap items-center gap-2">
                         <button className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-extrabold text-green-700 hover:bg-green-100">
                           Aprobar
@@ -300,9 +294,6 @@ export default function UsuariosPage() {
                         <button className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-extrabold text-violet-700 hover:bg-violet-100">
                           Ver / Editar
                         </button>
-                        <button className="rounded-lg px-2 py-2 text-lg font-extrabold text-slate-500 hover:bg-slate-100">
-                          ⋮
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -311,7 +302,7 @@ export default function UsuariosPage() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-100 px-6 py-5">
+          <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
               Mostrando <strong>1 a 10</strong> de <strong>33</strong> usuarios
             </p>
@@ -327,23 +318,11 @@ export default function UsuariosPage() {
           </div>
         </div>
 
-        <div
-          className="gap-5"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) 360px',
-          }}
-        >
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-extrabold text-slate-950">Estados KYC</p>
 
-            <div
-              className="mt-4 gap-4"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-              }}
-            >
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
               <div className="flex gap-3">
                 <span className="mt-1 h-2.5 w-2.5 rounded-full bg-amber-500" />
                 <div>
