@@ -1,4 +1,11 @@
-const statusMap: any = {
+type KycStatus =
+  | 'pending_review'
+  | 'docs_pending'
+  | 'approved'
+  | 'rejected'
+  | 'suspended'
+
+const statusMap: Record<KycStatus, { label: string; className: string }> = {
   pending_review: {
     label: 'En revisión',
     className: 'bg-yellow-100 text-yellow-800',
@@ -21,7 +28,7 @@ const statusMap: any = {
   },
 }
 
-export default function KYCBadge({ status }: { status: keyof typeof statusMap }) {
+export default function KYCBadge({ status }: { status: KycStatus }) {
   const item = statusMap[status] ?? statusMap.pending_review
 
   return (
