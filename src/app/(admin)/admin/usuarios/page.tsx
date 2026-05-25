@@ -67,7 +67,7 @@ export default function UsuariosPage() {
 
   const kycColors = {
     'En revisión': 'bg-amber-100 text-amber-700',
-    'Aprobado': 'bg-green-100 text-green-700',
+    Aprobado: 'bg-green-100 text-green-700',
   }
 
   return (
@@ -114,34 +114,42 @@ export default function UsuariosPage() {
           ))}
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_240px_140px]">
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                ⌕
-              </span>
+        {/* Toolbar responsive optimizada */}
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_150px] xl:max-w-[980px]">
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                  ⌕
+                </span>
 
-              <input
-                type="text"
-                placeholder="Buscar usuario por nombre, email o celular..."
-                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-              />
+                <input
+                  type="text"
+                  placeholder="Buscar usuario por nombre, email, RUT o celular..."
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                />
+              </div>
+
+              <select className="h-12 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100">
+                <option>Todos los estados</option>
+                <option>En revisión</option>
+                <option>Documentación pendiente</option>
+                <option>Aprobado</option>
+                <option>Rechazado</option>
+                <option>Suspendido</option>
+              </select>
+
+              <button className="h-12 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white">
+                Más filtros
+              </button>
             </div>
 
-            <select className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100">
-              <option>Todos los estados</option>
-              <option>En revisión</option>
-              <option>Aprobado</option>
-            </select>
-
-            <button className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-              Más filtros
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <button className="h-12 rounded-xl border border-violet-300 bg-white px-6 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
+                ↓ Exportar
+              </button>
+            </div>
           </div>
-
-          <button className="h-12 rounded-xl border border-violet-300 bg-white px-6 text-sm font-bold text-violet-700 transition hover:bg-violet-50">
-            ↓ Exportar
-          </button>
         </div>
 
         <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
