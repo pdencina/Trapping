@@ -83,7 +83,13 @@ export default function UsuariosPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+        <div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          }}
+        >
           {stats.map((item) => (
             <div
               key={item.label}
@@ -114,11 +120,35 @@ export default function UsuariosPage() {
           ))}
         </div>
 
-        {/* Toolbar responsive optimizada */}
+        {/* Toolbar bien ordenada: horizontal en desktop, apilada solo en móvil */}
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_150px] xl:max-w-[980px]">
-              <div className="relative">
+          <div
+            className="gap-3"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              width: '100%',
+            }}
+          >
+            <div
+              className="gap-3"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                flex: '1 1 auto',
+                minWidth: 0,
+              }}
+            >
+              <div
+                className="relative"
+                style={{
+                  flex: '1 1 520px',
+                  minWidth: 280,
+                }}
+              >
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                   ⌕
                 </span>
@@ -130,7 +160,12 @@ export default function UsuariosPage() {
                 />
               </div>
 
-              <select className="h-12 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100">
+              <select
+                className="h-12 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                style={{
+                  flex: '0 0 220px',
+                }}
+              >
                 <option>Todos los estados</option>
                 <option>En revisión</option>
                 <option>Documentación pendiente</option>
@@ -139,16 +174,24 @@ export default function UsuariosPage() {
                 <option>Suspendido</option>
               </select>
 
-              <button className="h-12 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white">
+              <button
+                className="h-12 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white"
+                style={{
+                  flex: '0 0 145px',
+                }}
+              >
                 Más filtros
               </button>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-              <button className="h-12 rounded-xl border border-violet-300 bg-white px-6 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
-                ↓ Exportar
-              </button>
-            </div>
+            <button
+              className="h-12 rounded-xl border border-violet-300 bg-white px-6 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50"
+              style={{
+                flex: '0 0 140px',
+              }}
+            >
+              ↓ Exportar
+            </button>
           </div>
         </div>
 
