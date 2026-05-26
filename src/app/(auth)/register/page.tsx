@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
-import { registerAction } from '@/lib/actions/auth'
 import { createClient } from '@/lib/supabase/client'
 
 type FormState = {
@@ -286,31 +285,38 @@ export default function RegisterPage() {
   const update = (key: keyof FormState, value: string | boolean) =>
     setForm(prev => ({ ...prev, [key]: value }))
 
-  // Submit paso 1 → crear usuario en Supabase
+  // Submit paso 1 → crear usuario via API Route
   const handleContinue = async () => {
     setSubmitting(true)
     setError(null)
-    const fd = new FormData()
-    fd.append('name', form.firstName)
-    fd.append('lastname', form.lastName)
-    fd.append('email', form.email)
-    fd.append('password', form.password)
-    fd.append('rut', form.documentNumber)
-    fd.append('celular', form.phone)
-    fd.append('tipo_documento_id', form.documentType)
-    fd.append('terms', 'on')
 
     try {
-      await registerAction(fd)
-      // Si llega acá sin redirect, ir a paso 2
-      setStep(2)
-    } catch (e: any) {
-      // Next.js redirect lanza un error especial — si es redirect, continuar
-      if (e?.message?.includes('NEXT_REDIRECT') || e?.digest?.includes('NEXT_REDIRECT')) {
-        setStep(2)
-      } else {
-        setError('Error al crear la cuenta. Verifica tus datos.')
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.firstName,
+          lastname: form.lastName,
+          email: form.email,
+          password: form.password,
+          rut: form.documentNumber,
+          celular: form.phone,
+          tipo_documento_id: form.documentType,
+        }),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        setError(json.error ?? 'Error al crear la cuenta')
+        setSubmitting(false)
+        return
       }
+
+      // Usuario creado exitosamente → ir a paso 2 (KYC)
+      setStep(2)
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.')
     }
     setSubmitting(false)
   }
