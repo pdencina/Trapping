@@ -41,12 +41,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  // Supabase retorna identities vacías cuando el email ya existe sin confirmar
-  // En ese caso igual fue exitoso — el email de confirmación se reenvió
-  const userId = data.user?.id
-  if (!userId) {
-    return NextResponse.json({ error: 'No se pudo crear el usuario' }, { status: 500 })
+  // Cuando "Confirm email" está ON, Supabase puede retornar user=null
+  // si el email ya fue enviado recientemente (rate limit interno)
+  // En ese caso igual fue exitoso — tratar como éxito
+  if (!data.user) {
+    return NextResponse.json({
+      success: true,
+      needsEmailConfirm: true,
+      note: 'email_queued'
+    })
   }
+
+  const userId = data.user.id
 
   // Guardar datos del perfil
   const service = createServiceClient()
@@ -61,10 +67,9 @@ export async function POST(req: NextRequest) {
     role: 'User',
   }).eq('id', userId)
 
-  // Siempre retornar success — el email de confirmación se envió
-  return NextResponse.json({ 
-    success: true, 
+  return NextResponse.json({
+    success: true,
     userId,
-    needsEmailConfirm: !data.user?.email_confirmed_at 
+    needsEmailConfirm: !data.user.email_confirmed_at
   })
 }
