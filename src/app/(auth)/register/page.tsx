@@ -1,7 +1,7 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import type { ElementType, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
 import {
   ArrowRight,
   BadgeCheck,
@@ -17,235 +17,73 @@ import {
   Phone,
   QrCode,
   ShieldCheck,
-  Smartphone,
   User,
 } from 'lucide-react'
-
-type Step = 1 | 2 | 3
+import { PhoneInput } from 'react-international-phone'
+import 'react-international-phone/style.css'
 
 type FormState = {
-  nombres: string
-  apellidos: string
-  tipoDocumento: string
-  numeroDocumento: string
-  telefono: string
-  phoneCountry: string
+  firstName: string
+  lastName: string
+  documentType: string
+  documentNumber: string
+  phone: string
   email: string
   password: string
   confirmPassword: string
   terms: boolean
-  documentoFrontal: File | null
-  documentoReverso: File | null
-  selfie: File | null
 }
 
 const initialForm: FormState = {
-  nombres: '',
-  apellidos: '',
-  tipoDocumento: '',
-  numeroDocumento: '',
-  telefono: '',
-  phoneCountry: 'CL',
+  firstName: '',
+  lastName: '',
+  documentType: '',
+  documentNumber: '',
+  phone: '+56',
   email: '',
   password: '',
   confirmPassword: '',
   terms: false,
-  documentoFrontal: null,
-  documentoReverso: null,
-  selfie: null,
 }
 
-const steps = [
-  { id: 1 as Step, title: 'Datos personales', description: 'Completa tu información' },
-  { id: 2 as Step, title: 'Identidad', description: 'Documento y selfie' },
-  { id: 3 as Step, title: 'Revisión', description: 'Validación final' },
-]
+const inputBase =
+  'h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100'
 
-function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ')
-}
-
-function Label({ children }: { children: ReactNode }) {
-  return <label className="mb-2 block text-sm font-extrabold text-slate-600">{children}</label>
-}
-
-function InputWithIcon({ icon: Icon, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { icon: ElementType }) {
-  return (
-    <div className="relative">
-      <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-      <input
-        {...props}
-        className={cx(
-          'h-12 w-full rounded-xl border border-slate-200/80 bg-white pl-11 pr-4 text-sm text-slate-600 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100',
-          className,
-        )}
-      />
-    </div>
-  )
-}
-
-function PasswordInput({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
-  const [show, setShow] = useState(false)
+function Stepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
+  const steps = [
+    { number: 1, title: 'Datos personales', subtitle: 'Completa tu información' },
+    { number: 2, title: 'Identidad', subtitle: 'Documento y selfie' },
+    { number: 3, title: 'Revisión', subtitle: 'Validación final' },
+  ]
 
   return (
-    <div className="relative">
-      <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-      <input
-        type={show ? 'text' : 'password'}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="h-12 w-full rounded-xl border border-slate-200/80 bg-white pl-11 pr-11 text-sm text-slate-600 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
-      />
-      <button
-        type="button"
-        onClick={() => setShow((current) => !current)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-violet-700"
-        aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-      >
-        {show ? <EyeOff size={17} /> : <Eye size={17} />}
-      </button>
-    </div>
-  )
-}
-
-function SelectWithIcon({ children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <div className="relative">
-      <CreditCard className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-      <select
-        {...props}
-        className="h-12 w-full appearance-none rounded-xl border border-slate-200/80 bg-white pl-11 pr-10 text-sm text-slate-600 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
-      >
-        {children}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-    </div>
-  )
-}
-
-
-const phoneCountries = [
-  { code: 'CL', name: 'Chile', dial: '+56', flag: '🇨🇱', placeholder: '9 1234 5678' },
-  { code: 'AR', name: 'Argentina', dial: '+54', flag: '🇦🇷', placeholder: '9 11 1234 5678' },
-  { code: 'PE', name: 'Perú', dial: '+51', flag: '🇵🇪', placeholder: '912 345 678' },
-  { code: 'CO', name: 'Colombia', dial: '+57', flag: '🇨🇴', placeholder: '300 123 4567' },
-  { code: 'MX', name: 'México', dial: '+52', flag: '🇲🇽', placeholder: '55 1234 5678' },
-  { code: 'US', name: 'Estados Unidos', dial: '+1', flag: '🇺🇸', placeholder: '(555) 123-4567' },
-  { code: 'ES', name: 'España', dial: '+34', flag: '🇪🇸', placeholder: '612 34 56 78' },
-]
-
-function PhoneCountryInput({
-  countryCode,
-  phone,
-  onCountryChange,
-  onPhoneChange,
-}: {
-  countryCode: string
-  phone: string
-  onCountryChange: (value: string) => void
-  onPhoneChange: (value: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-
-  const selected = phoneCountries.find((country) => country.code === countryCode) ?? phoneCountries[0]
-  const filteredCountries = phoneCountries.filter((country) => {
-    const text = `${country.name} ${country.dial} ${country.code}`.toLowerCase()
-    return text.includes(query.toLowerCase())
-  })
-
-  return (
-    <div className="relative">
-      <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200/80 bg-white transition focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-100">
-        <button
-          type="button"
-          onClick={() => setOpen((current) => !current)}
-          className="flex min-w-[128px] items-center justify-center gap-2 border-r border-slate-200/80 px-3 text-sm font-bold text-slate-600 transition hover:bg-violet-50"
-          aria-label="Seleccionar código de país"
-        >
-          <span className="text-base leading-none">{selected.flag}</span>
-          <span>{selected.dial}</span>
-          <ChevronDown className={cx('h-4 w-4 text-slate-400 transition', open && 'rotate-180')} />
-        </button>
-
-        <div className="relative flex-1">
-          <Phone className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={phone}
-            onChange={(event) => onPhoneChange(event.target.value)}
-            placeholder={selected.placeholder}
-            inputMode="tel"
-            className="h-full w-full border-0 bg-white px-4 pr-11 text-sm text-slate-600 outline-none placeholder:text-slate-400"
-          />
-        </div>
-      </div>
-
-      {open ? (
-        <div className="absolute left-0 top-[56px] z-30 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-violet-100">
-          <div className="border-b border-slate-100 p-3">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar país o código..."
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
-            />
-          </div>
-          <div className="max-h-64 overflow-auto p-2">
-            {filteredCountries.map((country) => (
-              <button
-                key={country.code}
-                type="button"
-                onClick={() => {
-                  onCountryChange(country.code)
-                  setQuery('')
-                  setOpen(false)
-                }}
-                className={cx(
-                  'flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm transition hover:bg-violet-50',
-                  country.code === selected.code && 'bg-violet-50 text-violet-700',
-                )}
-              >
-                <span className="flex items-center gap-3">
-                  <span className="text-lg leading-none">{country.flag}</span>
-                  <span className="font-bold text-slate-600">{country.name}</span>
-                </span>
-                <span className="font-extrabold text-slate-500">{country.dial}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function Stepper({ currentStep }: { currentStep: Step }) {
-  return (
-    <div className="mx-auto mt-8 flex max-w-[880px] items-center justify-center gap-5">
+    <div className="mx-auto mt-8 flex max-w-3xl items-center justify-center gap-5 text-sm max-md:flex-col max-md:items-stretch">
       {steps.map((step, index) => {
-        const active = step.id === currentStep
-        const done = step.id < currentStep
+        const active = step.number === currentStep
+        const done = step.number < currentStep
 
         return (
-          <div key={step.id} className="flex flex-1 items-center gap-5">
-            <div className="flex min-w-0 items-center gap-3">
+          <div key={step.number} className="flex items-center gap-5 max-md:w-full">
+            <div className="flex items-center gap-3">
               <div
-                className={cx(
-                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-extrabold transition',
-                  done && 'border-green-600 bg-green-600 text-white',
-                  active && 'border-violet-600 bg-violet-600 text-white shadow-lg shadow-violet-200',
-                  !active && !done && 'border-slate-300 bg-slate-100 text-slate-600',
-                )}
+                className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-bold shadow-sm transition ${
+                  done
+                    ? 'border-green-500 bg-green-500 text-white'
+                    : active
+                      ? 'border-violet-600 bg-violet-600 text-white shadow-violet-200'
+                      : 'border-slate-200 bg-slate-50 text-slate-500'
+                }`}
               >
-                {done ? <Check size={18} /> : step.id}
+                {done ? <Check size={18} /> : step.number}
               </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold text-slate-600">{step.title}</p>
-                <p className={cx('truncate text-xs', active ? 'text-violet-700' : 'text-slate-500')}>{step.description}</p>
+              <div>
+                <p className="font-extrabold text-slate-700">{step.title}</p>
+                <p className={active ? 'text-xs font-semibold text-violet-600' : 'text-xs text-slate-500'}>
+                  {step.subtitle}
+                </p>
               </div>
             </div>
-            {index < steps.length - 1 ? <div className={cx('hidden h-px flex-1 md:block', step.id < currentStep ? 'bg-green-300' : 'bg-slate-300')} /> : null}
+            {index < steps.length - 1 ? <div className="h-px w-20 bg-slate-200 max-md:hidden" /> : null}
           </div>
         )
       })}
@@ -253,441 +91,399 @@ function Stepper({ currentStep }: { currentStep: Step }) {
   )
 }
 
-function SecurityMiniCard({ icon: Icon, title }: { icon: ElementType; title: string }) {
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <label className="mb-2 block text-sm font-extrabold text-slate-700">{children}</label>
+}
+
+function IconInput({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-violet-50 px-4 py-4 text-center">
-      <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-white text-violet-700 shadow-sm">
-        <Icon size={17} />
-      </div>
-      <p className="mt-2 text-xs font-extrabold leading-tight text-slate-600">{title}</p>
+    <div className="relative">
+      <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">{icon}</div>
+      {children}
     </div>
   )
 }
 
-function CheckItem({ children }: { children: ReactNode }) {
+function SecuritySidebar() {
   return (
-    <div className="flex items-center gap-3 text-sm text-slate-600">
-      <Check className="h-4 w-4 shrink-0 text-violet-600" />
-      <span>{children}</span>
-    </div>
-  )
-}
-
-function ContinueOnPhoneCard({ phone, sent, onSend }: { phone: string; sent: boolean; onSend: () => void }) {
-  return (
-    <div className="rounded-[26px] border border-violet-200 bg-gradient-to-r from-violet-50 via-white to-cyan-50 p-6 shadow-lg shadow-violet-100/50">
-      <div className="grid gap-6 lg:grid-cols-[1fr_220px] lg:items-center">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-700 shadow-sm ring-1 ring-violet-100">
-            <Smartphone size={28} />
+    <aside className="space-y-5">
+      <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur">
+        <div className="flex gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+            <ShieldCheck size={25} />
           </div>
           <div>
-            <p className="text-lg font-extrabold text-slate-700">Haz esta validación desde tu celular</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-500">
-              Para evitar subir archivos manualmente desde el computador, abre este registro en tu teléfono y la cámara se activará para capturar documento frontal, reverso y selfie.
+            <h3 className="text-lg font-extrabold leading-tight text-slate-700">Tu seguridad es nuestra prioridad</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Utilizamos tecnología de encriptación y validación de identidad para mantener tu cuenta protegida.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-              <span className="rounded-full bg-white px-3 py-1 ring-1 ring-violet-100">1. Escanea QR</span>
-              <span className="rounded-full bg-white px-3 py-1 ring-1 ring-violet-100">2. Toma fotos</span>
-              <span className="rounded-full bg-white px-3 py-1 ring-1 ring-violet-100">3. Vuelve y envía</span>
-            </div>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-violet-200 bg-white p-4 text-center shadow-sm">
-          <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-2xl bg-slate-50 text-slate-600 ring-1 ring-slate-100">
-            <QrCode size={72} />
-          </div>
-          <p className="mt-3 text-xs font-bold text-slate-400">QR de verificación segura</p>
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
-        <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-slate-500 ring-1 ring-violet-100">
-          Link asociado al teléfono: <span className="font-extrabold text-slate-700">{phone || 'ingresa tu celular en el paso anterior'}</span>
-        </div>
-        <button
-          type="button"
-          onClick={onSend}
-          className="rounded-2xl bg-gradient-to-r from-violet-700 to-purple-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01]"
-        >
-          {sent ? 'Link preparado' : 'Enviar link al celular'}
-        </button>
-      </div>
-
-      {sent ? (
-        <div className="mt-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-700 ring-1 ring-green-100">
-          Listo. Cuando conectes SMS/WhatsApp/API, este botón enviará el link real al usuario.
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function CaptureUploadBox({
-  title,
-  description,
-  file,
-  onChange,
-  captureMode,
-  recommended,
-}: {
-  title: string
-  description: string
-  file: File | null
-  onChange: (file: File | null) => void
-  captureMode: 'environment' | 'user'
-  recommended: string
-}) {
-  const [showManual, setShowManual] = useState(false)
-  const previewUrl = useMemo(() => {
-    if (!file || !file.type.startsWith('image/')) return ''
-    return URL.createObjectURL(file)
-  }, [file])
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100/50">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
-          <CreditCard size={21} />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="font-extrabold text-slate-700">{title}</p>
-              <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>
-            </div>
-
-            {file ? (
-              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-extrabold text-green-700">
-                <Check size={13} />
-                Listo
-              </span>
-            ) : (
-              <span className="inline-flex w-fit rounded-full bg-orange-50 px-3 py-1 text-xs font-extrabold text-orange-600">
-                Pendiente
-              </span>
-            )}
-          </div>
-
-          {file ? (
-            <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-slate-50 p-3 sm:flex-row sm:items-center">
-              {previewUrl ? (
-                <img src={previewUrl} alt={title} className="h-20 w-28 rounded-xl object-cover ring-1 ring-slate-200" />
-              ) : (
-                <div className="flex h-20 w-28 items-center justify-center rounded-xl bg-white text-xs font-bold text-slate-400 ring-1 ring-slate-200">
-                  Archivo
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-slate-700">{file.name}</p>
-                <p className="mt-1 text-xs text-slate-500">Puedes repetir la captura si la imagen no se ve clara.</p>
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          {[
+            { icon: Lock, title: 'Encriptación', desc: '256-bit' },
+            { icon: BadgeCheck, title: 'Verificación', desc: 'de identidad' },
+            { icon: MonitorCheck, title: 'Monitoreo', desc: 'antifraude' },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="rounded-2xl bg-violet-50 px-3 py-4 text-center">
+              <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm">
+                <Icon size={17} />
               </div>
-              <button
-                type="button"
-                onClick={() => onChange(null)}
-                className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-extrabold text-red-600 transition hover:bg-red-50"
-              >
-                Repetir
-              </button>
+              <p className="mt-3 text-xs font-extrabold leading-tight text-slate-700">{title}</p>
+              <p className="text-xs font-bold leading-tight text-slate-600">{desc}</p>
             </div>
-          ) : null}
-
-          <div className="mt-4 rounded-2xl bg-violet-50/70 p-4 ring-1 ring-violet-100">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-extrabold text-slate-700">Captura recomendada</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">{recommended}</p>
-              </div>
-              <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-100 transition hover:scale-[1.01]">
-                Abrir cámara
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture={captureMode}
-                  className="hidden"
-                  onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-                />
-              </label>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowManual((current) => !current)}
-            className="mt-3 text-xs font-extrabold text-slate-400 underline-offset-4 transition hover:text-violet-700 hover:underline"
-          >
-            {showManual ? 'Ocultar carga manual' : 'No puedo usar cámara, subir archivo manualmente'}
-          </button>
-
-          {showManual ? (
-            <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
-              <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
-                Seleccionar imagen desde archivo
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-                />
-              </label>
-              <p className="mt-2 text-xs text-slate-400">Usa esta opción solo si estás en computador o si la cámara no está disponible.</p>
-            </div>
-          ) : null}
+          ))}
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur">
+        <h3 className="text-lg font-extrabold text-slate-700">¿Por qué validamos tu identidad?</h3>
+        <div className="mt-5 space-y-4 text-sm text-slate-600">
+          {[
+            'Cumplimos con regulaciones financieras',
+            'Protegemos tu cuenta y tus transacciones',
+            'Prevenimos fraudes y suplantación de identidad',
+            'Te permite operar con límites más altos',
+          ].map((text) => (
+            <div key={text} className="flex gap-3">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" />
+              <span>{text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur">
+        <div className="flex items-center gap-5">
+          <div className="flex h-28 w-24 shrink-0 items-center justify-center rounded-3xl border-2 border-violet-200 bg-white text-slate-600">
+            <QrCode size={54} />
+          </div>
+          <div>
+            <h3 className="text-lg font-extrabold text-slate-700">Proceso 100% digital</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Al validar tu identidad, continuarás desde el celular con cámara guiada.
+            </p>
+            <Link
+              href="/kyc/mobile"
+              className="mt-4 inline-flex h-11 items-center justify-center rounded-xl border border-violet-200 px-4 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50"
+            >
+              Continuar en mi teléfono
+            </Link>
+          </div>
+        </div>
+      </section>
+    </aside>
   )
 }
 
 export default function RegisterPage() {
-  const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>(initialForm)
-  const [submitted, setSubmitted] = useState(false)
-  const [phoneLinkSent, setPhoneLinkSent] = useState(false)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const accountCompleted = useMemo(() => {
-    return Boolean(
-      form.nombres.trim() &&
-        form.apellidos.trim() &&
-        form.tipoDocumento &&
-        form.numeroDocumento.trim() &&
-        form.telefono.trim() &&
-        form.email.trim() &&
-        form.password.length >= 8 &&
-        form.password === form.confirmPassword &&
-        form.terms,
-    )
-  }, [form])
+  const mobileKycUrl = useMemo(() => {
+    const phone = encodeURIComponent(form.phone || '')
+    const email = encodeURIComponent(form.email || '')
+    return `/kyc/mobile?phone=${phone}&email=${email}`
+  }, [form.phone, form.email])
 
-  const identityCompleted = Boolean(form.documentoFrontal && form.documentoReverso && form.selfie)
+  const canContinue =
+    form.firstName &&
+    form.lastName &&
+    form.documentType &&
+    form.documentNumber &&
+    form.phone &&
+    form.email &&
+    form.password.length >= 8 &&
+    form.password === form.confirmPassword &&
+    form.terms
 
-  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  function handleSubmit() {
-    setSubmitted(true)
-    setStep(3)
+  const update = (key: keyof FormState, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [key]: value }))
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#fbfbff] via-white to-[#f3efff] text-slate-600">
-      <div className="pointer-events-none absolute -left-28 top-24 h-72 w-72 rounded-full bg-violet-200/45 blur-3xl" />
-      <div className="pointer-events-none absolute -right-28 top-24 h-80 w-80 rounded-full bg-cyan-100/70 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-violet-100/50 blur-3xl" />
-
-      <header className="relative z-10 border-b border-slate-200/80/70 bg-white/75 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-700 text-sm font-extrabold text-white shadow-sm">T</div>
-            <span className="text-2xl font-extrabold tracking-tight">Trapping</span>
-          </div>
-          <div className="hidden items-center gap-3 text-sm md:flex">
-            <span className="text-slate-600">¿Ya tienes cuenta?</span>
-            <a href="/login" className="rounded-xl border border-violet-200 bg-white px-4 py-2 font-extrabold text-violet-700 shadow-sm transition hover:bg-violet-50">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.10),transparent_32%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.12),transparent_34%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] text-slate-700">
+      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-sm font-extrabold text-white shadow-sm">
+              T
+            </div>
+            <span className="text-2xl font-extrabold tracking-tight text-slate-800">Trapping</span>
+          </Link>
+          <div className="flex items-center gap-4 text-sm text-slate-600">
+            <span className="max-sm:hidden">¿Ya tienes cuenta?</span>
+            <Link
+              href="/login"
+              className="rounded-xl border border-violet-200 bg-white px-4 py-2 font-extrabold text-violet-700 transition hover:bg-violet-50"
+            >
               Iniciar sesión
-            </a>
+            </Link>
           </div>
         </div>
       </header>
 
-      <section className="relative z-10 mx-auto max-w-5xl px-5 pb-12 pt-8">
+      <section className="mx-auto max-w-7xl px-6 py-8">
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-violet-700 shadow-sm ring-1 ring-violet-100">
-            <ShieldCheck size={17} />
-            Validación segura
+          <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-extrabold text-violet-700 shadow-sm ring-1 ring-violet-100">
+            <ShieldCheck size={15} /> Validación segura
           </div>
-          <h1 className="mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">Crea tu cuenta gratuita</h1>
-          <p className="mt-2 text-slate-500">Protegemos tu identidad con validación segura y monitoreo antifraude.</p>
+          <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-700 max-sm:text-3xl">
+            Crea tu cuenta gratuita
+          </h1>
+          <p className="mt-3 text-base text-slate-500">
+            Protegemos tu identidad con validación segura y monitoreo antifraude.
+          </p>
         </div>
 
         <Stepper currentStep={step} />
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-          <section className="rounded-[28px] border border-slate-200/80 bg-white/92 p-6 shadow-2xl shadow-violet-100/60 backdrop-blur md:p-8">
+        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)] gap-6 max-lg:grid-cols-1">
+          <section className="rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-sm backdrop-blur max-sm:p-5">
             {step === 1 ? (
-              <div>
-                <h2 className="text-2xl font-extrabold">Datos de cuenta</h2>
-                <p className="mt-1 text-sm text-slate-500">Completa tus datos personales para comenzar.</p>
+              <>
+                <h2 className="text-2xl font-extrabold text-slate-700">Datos de cuenta</h2>
+                <p className="mt-2 text-sm text-slate-500">Completa tus datos personales para comenzar.</p>
 
-                <div className="mt-7 grid gap-5 md:grid-cols-2">
+                <div className="mt-8 grid grid-cols-2 gap-5 max-sm:grid-cols-1">
                   <div>
-                    <Label>Nombres *</Label>
-                    <InputWithIcon icon={User} placeholder="Ingresa tu nombre(s)" value={form.nombres} onChange={(event) => update('nombres', event.target.value)} />
+                    <FieldLabel>Nombres *</FieldLabel>
+                    <IconInput icon={<User size={16} />}>
+                      <input
+                        className={`${inputBase} pl-11`}
+                        placeholder="Ingresa tu nombre(s)"
+                        value={form.firstName}
+                        onChange={(event) => update('firstName', event.target.value)}
+                      />
+                    </IconInput>
                   </div>
+
                   <div>
-                    <Label>Apellidos *</Label>
-                    <InputWithIcon icon={User} placeholder="Ingresa tus apellidos" value={form.apellidos} onChange={(event) => update('apellidos', event.target.value)} />
+                    <FieldLabel>Apellidos *</FieldLabel>
+                    <IconInput icon={<User size={16} />}>
+                      <input
+                        className={`${inputBase} pl-11`}
+                        placeholder="Ingresa tus apellidos"
+                        value={form.lastName}
+                        onChange={(event) => update('lastName', event.target.value)}
+                      />
+                    </IconInput>
                   </div>
+
                   <div>
-                    <Label>Tipo de documento *</Label>
-                    <SelectWithIcon value={form.tipoDocumento} onChange={(event) => update('tipoDocumento', event.target.value)}>
-                      <option value="">Selecciona tu documento</option>
-                      <option value="rut">Cédula de identidad / RUT</option>
-                      <option value="passport">Pasaporte</option>
-                      <option value="foreign_id">Documento extranjero</option>
-                    </SelectWithIcon>
+                    <FieldLabel>Tipo de documento *</FieldLabel>
+                    <div className="relative">
+                      <CreditCard className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <select
+                        className={`${inputBase} appearance-none pl-11`}
+                        value={form.documentType}
+                        onChange={(event) => update('documentType', event.target.value)}
+                      >
+                        <option value="">Selecciona tu documento</option>
+                        <option value="rut">Cédula de identidad / RUT</option>
+                        <option value="passport">Pasaporte</option>
+                        <option value="dni">DNI extranjero</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                    </div>
                   </div>
+
                   <div>
-                    <Label>Número de documento *</Label>
-                    <InputWithIcon icon={CreditCard} placeholder="Ej: 12.345.678-9" value={form.numeroDocumento} onChange={(event) => update('numeroDocumento', event.target.value)} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label>Teléfono celular *</Label>
-                    <PhoneCountryInput
-                      countryCode={form.phoneCountry}
-                      phone={form.telefono}
-                      onCountryChange={(value) => update('phoneCountry', value)}
-                      onPhoneChange={(value) => update('telefono', value)}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label>Email *</Label>
-                    <InputWithIcon icon={Mail} type="email" placeholder="ejemplo@correo.com" value={form.email} onChange={(event) => update('email', event.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Contraseña *</Label>
-                    <PasswordInput value={form.password} onChange={(value) => update('password', value)} placeholder="Mínimo 8 caracteres" />
-                  </div>
-                  <div>
-                    <Label>Confirmar contraseña *</Label>
-                    <PasswordInput value={form.confirmPassword} onChange={(value) => update('confirmPassword', value)} placeholder="Repite tu contraseña" />
+                    <FieldLabel>Número de documento *</FieldLabel>
+                    <IconInput icon={<CreditCard size={16} />}>
+                      <input
+                        className={`${inputBase} pl-11`}
+                        placeholder="Ej: 12.345.678-9"
+                        value={form.documentNumber}
+                        onChange={(event) => update('documentNumber', event.target.value)}
+                      />
+                    </IconInput>
                   </div>
                 </div>
 
-                <label className="mt-6 flex items-start gap-3 rounded-2xl bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+                <div className="mt-5">
+                  <FieldLabel>Teléfono celular *</FieldLabel>
+                  <PhoneInput
+                    defaultCountry="cl"
+                    value={form.phone}
+                    onChange={(value) => update('phone', value)}
+                    inputClassName="!h-12 !w-full !rounded-xl !border-slate-200 !text-sm !text-slate-700 !outline-none"
+                    countrySelectorStyleProps={{
+                      buttonClassName:
+                        '!h-12 !rounded-l-xl !border-slate-200 !bg-white !px-3 !text-sm hover:!bg-slate-50',
+                    }}
+                  />
+                </div>
+
+                <div className="mt-5">
+                  <FieldLabel>Email *</FieldLabel>
+                  <IconInput icon={<Mail size={16} />}>
+                    <input
+                      type="email"
+                      className={`${inputBase} pl-11`}
+                      placeholder="ejemplo@correo.com"
+                      value={form.email}
+                      onChange={(event) => update('email', event.target.value)}
+                    />
+                  </IconInput>
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 gap-5 max-sm:grid-cols-1">
+                  <div>
+                    <FieldLabel>Contraseña *</FieldLabel>
+                    <IconInput icon={<Lock size={16} />}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        className={`${inputBase} pl-11 pr-12`}
+                        placeholder="Mínimo 8 caracteres"
+                        value={form.password}
+                        onChange={(event) => update('password', event.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </IconInput>
+                  </div>
+
+                  <div>
+                    <FieldLabel>Confirmar contraseña *</FieldLabel>
+                    <IconInput icon={<Lock size={16} />}>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        className={`${inputBase} pl-11 pr-12`}
+                        placeholder="Repite tu contraseña"
+                        value={form.confirmPassword}
+                        onChange={(event) => update('confirmPassword', event.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </IconInput>
+                  </div>
+                </div>
+
+                <label className="mt-6 flex gap-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
                   <input
                     type="checkbox"
                     checked={form.terms}
                     onChange={(event) => update('terms', event.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-violet-700 focus:ring-violet-500"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
                   />
                   <span>
-                    Acepto los <a href="/terminos" className="font-extrabold text-violet-700 underline-offset-2 hover:underline">términos y condiciones</a> y la{' '}
-                    <a href="/privacidad" className="font-extrabold text-violet-700 underline-offset-2 hover:underline">política de privacidad</a>. Entiendo que mi cuenta debe ser validada antes de poder operar.
+                    Acepto los <span className="font-extrabold text-violet-700">términos y condiciones</span> y la{' '}
+                    <span className="font-extrabold text-violet-700">política de privacidad</span>. Entiendo que mi cuenta debe ser validada antes de poder operar.
                   </span>
                 </label>
 
                 <button
                   type="button"
-                  disabled={!accountCompleted}
+                  disabled={!canContinue}
                   onClick={() => setStep(2)}
-                  className="mt-6 flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] hover:shadow-violet-300 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
+                  className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-400 text-sm font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
                 >
-                  Continuar
-                  <ArrowRight size={18} />
+                  Continuar <ArrowRight size={17} />
                 </button>
-              </div>
+              </>
             ) : null}
 
             {step === 2 ? (
-              <div>
-                <h2 className="text-2xl font-extrabold">Verifica tu identidad</h2>
-                <p className="mt-1 text-sm text-slate-500">La experiencia principal es continuar desde tu teléfono para usar la cámara y evitar carga manual de archivos.</p>
+              <>
+                <h2 className="text-2xl font-extrabold text-slate-700">Verifica tu identidad desde tu celular</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Por seguridad, la captura de documento y selfie se realiza desde la cámara del teléfono. En computador solo mostramos el acceso para continuar el proceso.
+                </p>
 
-                <div className="mt-7 space-y-4">
-                  <ContinueOnPhoneCard phone={`${phoneCountries.find((country) => country.code === form.phoneCountry)?.dial ?? '+56'} ${form.telefono}`} sent={phoneLinkSent} onSend={() => setPhoneLinkSent(true)} />
-                  <CaptureUploadBox
-                    title="Documento frontal"
-                    description="Toma una foto clara del frente de tu cédula o documento."
-                    file={form.documentoFrontal}
-                    onChange={(file) => update('documentoFrontal', file)}
-                    captureMode="environment"
-                    recommended="Usa tu celular, encuadra el documento completo y evita reflejos."
-                  />
-                  <CaptureUploadBox
-                    title="Documento reverso"
-                    description="Toma una foto clara del reverso de tu cédula o documento."
-                    file={form.documentoReverso}
-                    onChange={(file) => update('documentoReverso', file)}
-                    captureMode="environment"
-                    recommended="Da vuelta el documento y vuelve a tomar una foto completa y nítida."
-                  />
-                  <CaptureUploadBox
-                    title="Selfie del rostro"
-                    description="Toma una selfie actual, con buena luz y sin lentes oscuros."
-                    file={form.selfie}
-                    onChange={(file) => update('selfie', file)}
-                    captureMode="user"
-                    recommended="Mira directo a la cámara, con buena luz y sin lentes oscuros."
-                  />
+                <div className="mt-8 rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-cyan-50 p-6 shadow-sm">
+                  <div className="grid grid-cols-[1fr_180px] gap-6 max-sm:grid-cols-1">
+                    <div>
+                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-200">
+                        <Phone size={24} />
+                      </div>
+                      <h3 className="mt-5 text-xl font-extrabold text-slate-700">Continúa en tu teléfono</h3>
+                      <p className="mt-3 text-sm leading-6 text-slate-500">
+                        Escanea el QR o abre el link en tu celular. Allí se activará la cámara guiada para tomar documento frontal, reverso y selfie.
+                      </p>
+
+                      <div className="mt-5 grid grid-cols-3 gap-2 text-xs font-bold text-slate-600 max-sm:grid-cols-1">
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-2">1. Escanea QR</span>
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-2">2. Toma fotos</span>
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-2">3. Envía revisión</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center rounded-3xl border border-violet-200 bg-white p-5 text-center shadow-sm">
+                      <QrCode className="h-24 w-24 text-slate-600" />
+                      <p className="mt-3 text-xs font-bold text-slate-500">QR de verificación segura</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-[1fr_auto] gap-3 max-sm:grid-cols-1">
+                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+                      Link asociado al teléfono: <span className="font-extrabold text-slate-700">{form.phone}</span>
+                    </div>
+                    <Link
+                      href={mobileKycUrl}
+                      className="inline-flex h-12 items-center justify-center rounded-xl bg-violet-600 px-6 text-sm font-extrabold text-white shadow-lg shadow-violet-200 transition hover:bg-violet-700"
+                    >
+                      Abrir flujo móvil
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <button type="button" onClick={() => setStep(1)} className="h-[50px] rounded-xl border border-slate-200/80 bg-white font-extrabold text-slate-600 transition hover:bg-slate-50">
+                <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-bold leading-6 text-green-700">
+                  Este paso reemplaza la carga manual desde Windows. La carga de archivos queda solo como respaldo técnico en la ruta móvil.
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="h-13 flex-1 rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm font-extrabold text-slate-600 transition hover:bg-slate-50"
+                  >
                     Volver
                   </button>
                   <button
                     type="button"
-                    disabled={!identityCompleted}
-                    onClick={handleSubmit}
-                    className="h-[50px] rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
+                    onClick={() => setStep(3)}
+                    className="h-13 flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-purple-400 px-5 py-4 text-sm font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01]"
                   >
-                    Enviar a revisión
+                    Ya finalicé en mi teléfono
                   </button>
                 </div>
-              </div>
+              </>
             ) : null}
 
             {step === 3 ? (
-              <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-700">
-                  <CheckCircle2 size={42} />
+              <div className="py-10 text-center">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600">
+                  <CheckCircle2 size={44} />
                 </div>
-                <h2 className="mt-6 text-3xl font-extrabold">Tu cuenta quedó en revisión</h2>
-                <p className="mt-3 max-w-xl text-slate-500">Recibimos tus datos y documentos. Un administrador validará tu identidad antes de habilitar tus operaciones.</p>
-                <a href="/login" className="mt-8 rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 px-6 py-3 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01]">
+                <h2 className="mt-6 text-3xl font-extrabold text-slate-700">Tu cuenta quedó en revisión</h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
+                  Revisaremos tu información y documentos. Te avisaremos cuando la cuenta esté habilitada para operar.
+                </p>
+                <Link
+                  href="/login"
+                  className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-violet-600 px-8 text-sm font-extrabold text-white transition hover:bg-violet-700"
+                >
                   Ir a iniciar sesión
-                </a>
+                </Link>
               </div>
             ) : null}
           </section>
 
-          <aside className="space-y-5">
-            <div className="rounded-[28px] border border-slate-200/80 bg-white/85 p-6 shadow-xl shadow-violet-100/50 backdrop-blur">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
-                  <ShieldCheck size={25} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-extrabold leading-tight">Tu seguridad es nuestra prioridad</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">Utilizamos tecnología de encriptación y validación de identidad para mantener tu cuenta protegida.</p>
-                </div>
-              </div>
-              <div className="mt-6 grid grid-cols-3 gap-3">
-                <SecurityMiniCard icon={Lock} title="Encriptación 256-bit" />
-                <SecurityMiniCard icon={BadgeCheck} title="Verificación de identidad" />
-                <SecurityMiniCard icon={MonitorCheck} title="Monitoreo antifraude" />
-              </div>
-            </div>
-
-            <div className="rounded-[28px] border border-slate-200/80 bg-white/85 p-6 shadow-xl shadow-violet-100/50 backdrop-blur">
-              <h3 className="text-lg font-extrabold">¿Por qué validamos tu identidad?</h3>
-              <div className="mt-5 space-y-4">
-                <CheckItem>Cumplimos con regulaciones financieras</CheckItem>
-                <CheckItem>Protegemos tu cuenta y tus transacciones</CheckItem>
-                <CheckItem>Prevenimos fraudes y suplantación de identidad</CheckItem>
-                <CheckItem>Te permite operar con límites más altos</CheckItem>
-              </div>
-            </div>
-
-            <div className="rounded-[28px] border border-slate-200/80 bg-white/85 p-6 shadow-xl shadow-violet-100/50 backdrop-blur">
-              <div className="flex items-center gap-5">
-                <div className="flex h-32 w-20 shrink-0 items-center justify-center rounded-[24px] border-2 border-violet-200 bg-white shadow-sm">
-                  <QrCode className="h-14 w-14 text-slate-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-extrabold">Proceso 100% digital</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">También puedes continuar desde tu celular escaneando el código QR.</p>
-                  <button type="button" className="mt-4 rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
-                    Continuar en mi teléfono
-                  </button>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <SecuritySidebar />
         </div>
       </section>
     </main>
