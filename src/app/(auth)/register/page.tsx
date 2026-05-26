@@ -64,7 +64,7 @@ function cx(...classes: Array<string | false | null | undefined>) {
 }
 
 function Label({ children }: { children: ReactNode }) {
-  return <label className="mb-2 block text-sm font-extrabold text-slate-950">{children}</label>
+  return <label className="mb-2 block text-sm font-extrabold text-slate-600">{children}</label>
 }
 
 function InputWithIcon({ icon: Icon, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { icon: ElementType }) {
@@ -74,7 +74,7 @@ function InputWithIcon({ icon: Icon, className, ...props }: InputHTMLAttributes<
       <input
         {...props}
         className={cx(
-          'h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100',
+          'h-12 w-full rounded-xl border border-slate-200/80 bg-white pl-11 pr-4 text-sm text-slate-600 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100',
           className,
         )}
       />
@@ -93,7 +93,7 @@ function PasswordInput({ value, onChange, placeholder }: { value: string; onChan
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+        className="h-12 w-full rounded-xl border border-slate-200/80 bg-white pl-11 pr-11 text-sm text-slate-600 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
       />
       <button
         type="button"
@@ -113,7 +113,7 @@ function SelectWithIcon({ children, ...props }: SelectHTMLAttributes<HTMLSelectE
       <CreditCard className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
       <select
         {...props}
-        className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+        className="h-12 w-full appearance-none rounded-xl border border-slate-200/80 bg-white pl-11 pr-10 text-sm text-slate-600 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
       >
         {children}
       </select>
@@ -143,7 +143,7 @@ function Stepper({ currentStep }: { currentStep: Step }) {
                 {done ? <Check size={18} /> : step.id}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold text-slate-950">{step.title}</p>
+                <p className="truncate text-sm font-extrabold text-slate-600">{step.title}</p>
                 <p className={cx('truncate text-xs', active ? 'text-violet-700' : 'text-slate-500')}>{step.description}</p>
               </div>
             </div>
@@ -161,14 +161,14 @@ function SecurityMiniCard({ icon: Icon, title }: { icon: ElementType; title: str
       <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-white text-violet-700 shadow-sm">
         <Icon size={17} />
       </div>
-      <p className="mt-2 text-xs font-extrabold leading-tight text-slate-800">{title}</p>
+      <p className="mt-2 text-xs font-extrabold leading-tight text-slate-600">{title}</p>
     </div>
   )
 }
 
 function CheckItem({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center gap-3 text-sm text-slate-700">
+    <div className="flex items-center gap-3 text-sm text-slate-600">
       <Check className="h-4 w-4 shrink-0 text-violet-600" />
       <span>{children}</span>
     </div>
@@ -183,7 +183,7 @@ function UploadBox({ title, description, file, onChange }: { title: string; desc
           <CreditCard size={20} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-extrabold text-slate-950">{title}</p>
+          <p className="font-extrabold text-slate-600">{title}</p>
           <p className="mt-1 text-sm text-slate-500">{description}</p>
           <p className="mt-3 inline-flex rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-extrabold text-violet-700">
             {file ? file.name : 'Seleccionar archivo'}
@@ -226,19 +226,19 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#fbfbff] text-slate-950">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#fbfbff] via-white to-[#f3efff] text-slate-600">
       <div className="pointer-events-none absolute -left-28 top-24 h-72 w-72 rounded-full bg-violet-200/45 blur-3xl" />
       <div className="pointer-events-none absolute -right-28 top-24 h-80 w-80 rounded-full bg-cyan-100/70 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-violet-100/50 blur-3xl" />
 
-      <header className="relative z-10 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-slate-200/80/70 bg-white/75 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-700 text-sm font-black text-white shadow-sm">T</div>
-            <span className="text-2xl font-black tracking-tight">Trapping</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-700 text-sm font-extrabold text-white shadow-sm">T</div>
+            <span className="text-2xl font-extrabold tracking-tight">Trapping</span>
           </div>
           <div className="hidden items-center gap-3 text-sm md:flex">
-            <span className="text-slate-700">¿Ya tienes cuenta?</span>
+            <span className="text-slate-600">¿Ya tienes cuenta?</span>
             <a href="/login" className="rounded-xl border border-violet-200 bg-white px-4 py-2 font-extrabold text-violet-700 shadow-sm transition hover:bg-violet-50">
               Iniciar sesión
             </a>
@@ -252,17 +252,17 @@ export default function RegisterPage() {
             <ShieldCheck size={17} />
             Validación segura
           </div>
-          <h1 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">Crea tu cuenta gratuita</h1>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">Crea tu cuenta gratuita</h1>
           <p className="mt-2 text-slate-500">Protegemos tu identidad con validación segura y monitoreo antifraude.</p>
         </div>
 
         <Stepper currentStep={step} />
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-          <section className="rounded-[28px] border border-slate-200 bg-white/90 p-6 shadow-xl shadow-slate-200/50 backdrop-blur md:p-8">
+          <section className="rounded-[28px] border border-slate-200/80 bg-white/92 p-6 shadow-2xl shadow-violet-100/60 backdrop-blur md:p-8">
             {step === 1 ? (
               <div>
-                <h2 className="text-2xl font-black">Datos de cuenta</h2>
+                <h2 className="text-2xl font-extrabold">Datos de cuenta</h2>
                 <p className="mt-1 text-sm text-slate-500">Completa tus datos personales para comenzar.</p>
 
                 <div className="mt-7 grid gap-5 md:grid-cols-2">
@@ -289,8 +289,8 @@ export default function RegisterPage() {
                   </div>
                   <div className="md:col-span-2">
                     <Label>Teléfono celular *</Label>
-                    <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition-within focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-100">
-                      <div className="flex items-center gap-2 border-r border-slate-200 px-4 text-sm font-bold text-slate-700">
+                    <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200/80 bg-white transition-within focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-100">
+                      <div className="flex items-center gap-2 border-r border-slate-200/80 px-4 text-sm font-bold text-slate-600">
                         🇨🇱 <span>+56</span>
                       </div>
                       <div className="relative flex-1">
@@ -335,7 +335,7 @@ export default function RegisterPage() {
                   type="button"
                   disabled={!accountCompleted}
                   onClick={() => setStep(2)}
-                  className="mt-6 flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-black text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] hover:shadow-violet-300 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
+                  className="mt-6 flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] hover:shadow-violet-300 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
                 >
                   Continuar
                   <ArrowRight size={18} />
@@ -345,7 +345,7 @@ export default function RegisterPage() {
 
             {step === 2 ? (
               <div>
-                <h2 className="text-2xl font-black">Verifica tu identidad</h2>
+                <h2 className="text-2xl font-extrabold">Verifica tu identidad</h2>
                 <p className="mt-1 text-sm text-slate-500">Sube fotos claras de tu documento y una selfie para revisión KYC.</p>
 
                 <div className="mt-7 grid gap-4">
@@ -355,14 +355,14 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <button type="button" onClick={() => setStep(1)} className="h-[50px] rounded-xl border border-slate-200 bg-white font-black text-slate-700 transition hover:bg-slate-50">
+                  <button type="button" onClick={() => setStep(1)} className="h-[50px] rounded-xl border border-slate-200/80 bg-white font-extrabold text-slate-600 transition hover:bg-slate-50">
                     Volver
                   </button>
                   <button
                     type="button"
                     disabled={!identityCompleted}
                     onClick={handleSubmit}
-                    className="h-[50px] rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-black text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
+                    className="h-[50px] rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
                   >
                     Enviar a revisión
                   </button>
@@ -375,9 +375,9 @@ export default function RegisterPage() {
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-700">
                   <CheckCircle2 size={42} />
                 </div>
-                <h2 className="mt-6 text-3xl font-black">Tu cuenta quedó en revisión</h2>
+                <h2 className="mt-6 text-3xl font-extrabold">Tu cuenta quedó en revisión</h2>
                 <p className="mt-3 max-w-xl text-slate-500">Recibimos tus datos y documentos. Un administrador validará tu identidad antes de habilitar tus operaciones.</p>
-                <a href="/login" className="mt-8 rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 px-6 py-3 font-black text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01]">
+                <a href="/login" className="mt-8 rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 px-6 py-3 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01]">
                   Ir a iniciar sesión
                 </a>
               </div>
@@ -385,13 +385,13 @@ export default function RegisterPage() {
           </section>
 
           <aside className="space-y-5">
-            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-6 shadow-xl shadow-slate-200/40 backdrop-blur">
+            <div className="rounded-[28px] border border-slate-200/80 bg-white/85 p-6 shadow-xl shadow-violet-100/50 backdrop-blur">
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
                   <ShieldCheck size={25} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black leading-tight">Tu seguridad es nuestra prioridad</h3>
+                  <h3 className="text-lg font-extrabold leading-tight">Tu seguridad es nuestra prioridad</h3>
                   <p className="mt-3 text-sm leading-relaxed text-slate-600">Utilizamos tecnología de encriptación y validación de identidad para mantener tu cuenta protegida.</p>
                 </div>
               </div>
@@ -402,8 +402,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-6 shadow-xl shadow-slate-200/40 backdrop-blur">
-              <h3 className="text-lg font-black">¿Por qué validamos tu identidad?</h3>
+            <div className="rounded-[28px] border border-slate-200/80 bg-white/85 p-6 shadow-xl shadow-violet-100/50 backdrop-blur">
+              <h3 className="text-lg font-extrabold">¿Por qué validamos tu identidad?</h3>
               <div className="mt-5 space-y-4">
                 <CheckItem>Cumplimos con regulaciones financieras</CheckItem>
                 <CheckItem>Protegemos tu cuenta y tus transacciones</CheckItem>
@@ -412,15 +412,15 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-6 shadow-xl shadow-slate-200/40 backdrop-blur">
+            <div className="rounded-[28px] border border-slate-200/80 bg-white/85 p-6 shadow-xl shadow-violet-100/50 backdrop-blur">
               <div className="flex items-center gap-5">
                 <div className="flex h-32 w-20 shrink-0 items-center justify-center rounded-[24px] border-2 border-violet-200 bg-white shadow-sm">
-                  <QrCode className="h-14 w-14 text-slate-900" />
+                  <QrCode className="h-14 w-14 text-slate-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black">Proceso 100% digital</h3>
+                  <h3 className="text-lg font-extrabold">Proceso 100% digital</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">También puedes continuar desde tu celular escaneando el código QR.</p>
-                  <button type="button" className="mt-4 rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-black text-violet-700 transition hover:bg-violet-50">
+                  <button type="button" className="mt-4 rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
                     Continuar en mi teléfono
                   </button>
                 </div>
