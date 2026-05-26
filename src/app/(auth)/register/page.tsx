@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import type { ElementType, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
 import {
   ArrowRight,
@@ -23,7 +22,6 @@ import {
 } from 'lucide-react'
 
 type Step = 1 | 2 | 3
-type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
 
 type FormState = {
   nombres: string
@@ -31,6 +29,7 @@ type FormState = {
   tipoDocumento: string
   numeroDocumento: string
   telefono: string
+  phoneCountry: string
   email: string
   password: string
   confirmPassword: string
@@ -46,6 +45,7 @@ const initialForm: FormState = {
   tipoDocumento: '',
   numeroDocumento: '',
   telefono: '',
+  phoneCountry: 'CL',
   email: '',
   password: '',
   confirmPassword: '',
@@ -54,13 +54,6 @@ const initialForm: FormState = {
   documentoReverso: null,
   selfie: null,
 }
-
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
-const KYC_BUCKET = 'kyc-documents'
 
 const steps = [
   { id: 1 as Step, title: 'Datos personales', description: 'Completa tu información' },
@@ -127,6 +120,102 @@ function SelectWithIcon({ children, ...props }: SelectHTMLAttributes<HTMLSelectE
         {children}
       </select>
       <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+    </div>
+  )
+}
+
+
+const phoneCountries = [
+  { code: 'CL', name: 'Chile', dial: '+56', flag: '🇨🇱', placeholder: '9 1234 5678' },
+  { code: 'AR', name: 'Argentina', dial: '+54', flag: '🇦🇷', placeholder: '9 11 1234 5678' },
+  { code: 'PE', name: 'Perú', dial: '+51', flag: '🇵🇪', placeholder: '912 345 678' },
+  { code: 'CO', name: 'Colombia', dial: '+57', flag: '🇨🇴', placeholder: '300 123 4567' },
+  { code: 'MX', name: 'México', dial: '+52', flag: '🇲🇽', placeholder: '55 1234 5678' },
+  { code: 'US', name: 'Estados Unidos', dial: '+1', flag: '🇺🇸', placeholder: '(555) 123-4567' },
+  { code: 'ES', name: 'España', dial: '+34', flag: '🇪🇸', placeholder: '612 34 56 78' },
+]
+
+function PhoneCountryInput({
+  countryCode,
+  phone,
+  onCountryChange,
+  onPhoneChange,
+}: {
+  countryCode: string
+  phone: string
+  onCountryChange: (value: string) => void
+  onPhoneChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+
+  const selected = phoneCountries.find((country) => country.code === countryCode) ?? phoneCountries[0]
+  const filteredCountries = phoneCountries.filter((country) => {
+    const text = `${country.name} ${country.dial} ${country.code}`.toLowerCase()
+    return text.includes(query.toLowerCase())
+  })
+
+  return (
+    <div className="relative">
+      <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200/80 bg-white transition focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-100">
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className="flex min-w-[128px] items-center justify-center gap-2 border-r border-slate-200/80 px-3 text-sm font-bold text-slate-600 transition hover:bg-violet-50"
+          aria-label="Seleccionar código de país"
+        >
+          <span className="text-base leading-none">{selected.flag}</span>
+          <span>{selected.dial}</span>
+          <ChevronDown className={cx('h-4 w-4 text-slate-400 transition', open && 'rotate-180')} />
+        </button>
+
+        <div className="relative flex-1">
+          <Phone className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={phone}
+            onChange={(event) => onPhoneChange(event.target.value)}
+            placeholder={selected.placeholder}
+            inputMode="tel"
+            className="h-full w-full border-0 bg-white px-4 pr-11 text-sm text-slate-600 outline-none placeholder:text-slate-400"
+          />
+        </div>
+      </div>
+
+      {open ? (
+        <div className="absolute left-0 top-[56px] z-30 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-violet-100">
+          <div className="border-b border-slate-100 p-3">
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar país o código..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+            />
+          </div>
+          <div className="max-h-64 overflow-auto p-2">
+            {filteredCountries.map((country) => (
+              <button
+                key={country.code}
+                type="button"
+                onClick={() => {
+                  onCountryChange(country.code)
+                  setQuery('')
+                  setOpen(false)
+                }}
+                className={cx(
+                  'flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm transition hover:bg-violet-50',
+                  country.code === selected.code && 'bg-violet-50 text-violet-700',
+                )}
+              >
+                <span className="flex items-center gap-3">
+                  <span className="text-lg leading-none">{country.flag}</span>
+                  <span className="font-bold text-slate-600">{country.name}</span>
+                </span>
+                <span className="font-extrabold text-slate-500">{country.dial}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -204,34 +293,10 @@ function UploadBox({ title, description, file, onChange }: { title: string; desc
   )
 }
 
-
-function sanitizeFileName(name: string) {
-  return name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-zA-Z0-9._-]/g, '-')
-    .toLowerCase()
-}
-
-async function uploadKycFile(userId: string, type: string, file: File) {
-  if (!supabase) throw new Error('Supabase no está configurado. Revisa las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.')
-
-  const extension = file.name.split('.').pop() || 'jpg'
-  const path = `${userId}/${type}-${Date.now()}-${sanitizeFileName(file.name || `archivo.${extension}`)}`
-
-  const { error } = await supabase.storage
-    .from(KYC_BUCKET)
-    .upload(path, file, { cacheControl: '3600', upsert: true })
-
-  if (error) throw error
-  return path
-}
-
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>(initialForm)
-  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle')
-  const [errorMessage, setErrorMessage] = useState('')
+  const [submitted, setSubmitted] = useState(false)
 
   const accountCompleted = useMemo(() => {
     return Boolean(
@@ -253,83 +318,9 @@ export default function RegisterPage() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  async function handleSubmit() {
-    setErrorMessage('')
-
-    if (!supabase) {
-      setSubmitStatus('error')
-      setErrorMessage('Supabase no está configurado. Revisa las variables de entorno del proyecto.')
-      return
-    }
-
-    if (!accountCompleted || !identityCompleted) {
-      setSubmitStatus('error')
-      setErrorMessage('Completa todos los datos y documentos antes de enviar la solicitud.')
-      return
-    }
-
-    try {
-      setSubmitStatus('loading')
-
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-        options: {
-          data: {
-            nombres: form.nombres.trim(),
-            apellidos: form.apellidos.trim(),
-            telefono: `+56${form.telefono.replace(/\s/g, '')}`,
-            tipo_documento: form.tipoDocumento,
-            numero_documento: form.numeroDocumento.trim(),
-            kyc_status: 'pending_review',
-          },
-        },
-      })
-
-      if (signUpError) throw signUpError
-
-      const userId = signUpData.user?.id
-      if (!userId) throw new Error('No se pudo crear el usuario. Intenta nuevamente.')
-
-      const [documentFrontPath, documentBackPath, selfiePath] = await Promise.all([
-        uploadKycFile(userId, 'documento-frontal', form.documentoFrontal!),
-        uploadKycFile(userId, 'documento-reverso', form.documentoReverso!),
-        uploadKycFile(userId, 'selfie', form.selfie!),
-      ])
-
-      const profilePayload = {
-        id: userId,
-        nombres: form.nombres.trim(),
-        apellidos: form.apellidos.trim(),
-        email: form.email.trim().toLowerCase(),
-        telefono: `+56${form.telefono.replace(/\s/g, '')}`,
-        tipo_documento: form.tipoDocumento,
-        numero_documento: form.numeroDocumento.trim(),
-        kyc_status: 'pending_review',
-        role: 'user',
-        updated_at: new Date().toISOString(),
-      }
-
-      await supabase.from('profiles').upsert(profilePayload).throwOnError()
-
-      await supabase
-        .from('kyc_documents')
-        .insert({
-          user_id: userId,
-          document_front_path: documentFrontPath,
-          document_back_path: documentBackPath,
-          selfie_path: selfiePath,
-          status: 'pending_review',
-        })
-        .throwOnError()
-
-      setSubmitStatus('success')
-      setStep(3)
-    } catch (error) {
-      console.error('Error registrando usuario:', error)
-      setSubmitStatus('error')
-      setErrorMessage(error instanceof Error ? error.message : 'No se pudo completar el registro. Intenta nuevamente.')
-    }
+  function handleSubmit() {
+    setSubmitted(true)
+    setStep(3)
   }
 
   return (
@@ -396,20 +387,12 @@ export default function RegisterPage() {
                   </div>
                   <div className="md:col-span-2">
                     <Label>Teléfono celular *</Label>
-                    <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200/80 bg-white transition-within focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-100">
-                      <div className="flex items-center gap-2 border-r border-slate-200/80 px-4 text-sm font-bold text-slate-600">
-                        🇨🇱 <span>+56</span>
-                      </div>
-                      <div className="relative flex-1">
-                        <Phone className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input
-                          value={form.telefono}
-                          onChange={(event) => update('telefono', event.target.value)}
-                          placeholder="9 1234 5678"
-                          className="h-full w-full border-0 bg-white px-4 pr-11 text-sm outline-none placeholder:text-slate-400"
-                        />
-                      </div>
-                    </div>
+                    <PhoneCountryInput
+                      countryCode={form.phoneCountry}
+                      phone={form.telefono}
+                      onCountryChange={(value) => update('phoneCountry', value)}
+                      onPhoneChange={(value) => update('telefono', value)}
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label>Email *</Label>
@@ -438,12 +421,6 @@ export default function RegisterPage() {
                   </span>
                 </label>
 
-                {submitStatus === 'error' && errorMessage ? (
-                  <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-                    {errorMessage}
-                  </div>
-                ) : null}
-
                 <button
                   type="button"
                   disabled={!accountCompleted}
@@ -467,23 +444,17 @@ export default function RegisterPage() {
                   <UploadBox title="Selfie del rostro" description="Foto actual de tu rostro, con buena luz y sin lentes oscuros." file={form.selfie} onChange={(file) => update('selfie', file)} />
                 </div>
 
-                {submitStatus === 'error' && errorMessage ? (
-                  <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-                    {errorMessage}
-                  </div>
-                ) : null}
-
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <button type="button" disabled={submitStatus === 'loading'} onClick={() => setStep(1)} className="h-[50px] rounded-xl border border-slate-200/80 bg-white font-extrabold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                  <button type="button" onClick={() => setStep(1)} className="h-[50px] rounded-xl border border-slate-200/80 bg-white font-extrabold text-slate-600 transition hover:bg-slate-50">
                     Volver
                   </button>
                   <button
                     type="button"
-                    disabled={!identityCompleted || submitStatus === 'loading'}
+                    disabled={!identityCompleted}
                     onClick={handleSubmit}
                     className="h-[50px] rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
                   >
-                    {submitStatus === 'loading' ? 'Creando cuenta...' : 'Enviar a revisión'}
+                    Enviar a revisión
                   </button>
                 </div>
               </div>
