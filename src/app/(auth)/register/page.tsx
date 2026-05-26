@@ -313,8 +313,13 @@ export default function RegisterPage() {
         return
       }
 
-      // Usuario creado exitosamente → ir a paso 2 (KYC)
-      setStep(2)
+      // Si necesita confirmar email → mostrar pantalla de confirmación
+      if (json.needsEmailConfirm) {
+        setStep('email_sent' as any)
+      } else {
+        // Email ya confirmado (raro) → ir directo a KYC
+        setStep(2)
+      }
     } catch {
       setError('Error de conexión. Intenta de nuevo.')
     }
@@ -457,6 +462,28 @@ export default function RegisterPage() {
                   {submitting ? 'Creando cuenta...' : <> Continuar <ArrowRight size={17} /> </>}
                 </button>
               </>
+            )}
+
+            {/* ── PASO INTERMEDIO: Confirmar email ── */}
+            {(step as any) === 'email_sent' && (
+              <div className="py-10 text-center">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+                  <Mail size={44} />
+                </div>
+                <h2 className="mt-6 text-2xl font-extrabold text-slate-700">Revisa tu correo</h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
+                  Te enviamos un enlace de confirmación a <strong className="text-slate-700">{form.email}</strong>.
+                  Haz clic en el enlace para continuar con la verificación de tu identidad.
+                </p>
+                <div className="mt-6 rounded-2xl bg-violet-50 border border-violet-200 p-5 text-sm text-violet-700 max-w-sm mx-auto">
+                  <p className="font-extrabold mb-1">¿Qué pasa después?</p>
+                  <p className="leading-6">Al hacer clic en el enlace del correo, te llevaremos directamente a fotografiar tu documento de identidad.</p>
+                </div>
+                <p className="mt-6 text-xs text-slate-400">
+                  ¿No llegó el correo? Revisa tu carpeta de spam o{' '}
+                  <button onClick={handleContinue} className="text-violet-600 underline font-semibold">reenviar</button>
+                </p>
+              </div>
             )}
 
             {/* ── PASO 2: KYC con QR real ── */}

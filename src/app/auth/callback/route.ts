@@ -10,7 +10,23 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = createClient()
     await supabase.auth.exchangeCodeForSession(code)
+
+    // Verificar si el usuario ya completó KYC
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('validado, documento')
+        .eq('id', user.id)
+        .single()
+
+      // Si no tiene documento cargado → ir a KYC
+      if (profile && !profile.documento) {
+        return NextResponse.redirect(`${origin}/register/kyc`)
+      }
+    }
   }
 
+  // Si ya tiene documentos o algo falló → dashboard
   return NextResponse.redirect(`${origin}/dashboard`)
 }

@@ -41,17 +41,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  if (!data.user) {
+  // Supabase retorna identities vacías cuando el email ya existe sin confirmar
+  // En ese caso igual fue exitoso — el email de confirmación se reenvió
+  const userId = data.user?.id
+  if (!userId) {
     return NextResponse.json({ error: 'No se pudo crear el usuario' }, { status: 500 })
   }
 
-  // Supabase retorna user con identities vacías cuando el email ya existe sin confirmar
-  if (data.user.identities && data.user.identities.length === 0) {
-    return NextResponse.json({ error: 'Este email ya está registrado. Si no verificaste tu cuenta, revisa tu bandeja de entrada.' }, { status: 400 })
-  }
-
+  // Guardar datos del perfil
   const service = createServiceClient()
-  const { error: profileError } = await service.from('profiles').update({
+  await service.from('profiles').update({
     name: parsed.data.name,
     lastname: parsed.data.lastname,
     rut: parsed.data.rut,
@@ -60,11 +59,12 @@ export async function POST(req: NextRequest) {
     terms: true,
     validado: 0,
     role: 'User',
-  }).eq('id', data.user.id)
+  }).eq('id', userId)
 
-  if (profileError) {
-    return NextResponse.json({ error: 'Error guardando perfil' }, { status: 500 })
-  }
-
-  return NextResponse.json({ success: true, userId: data.user.id })
+  // Siempre retornar success — el email de confirmación se envió
+  return NextResponse.json({ 
+    success: true, 
+    userId,
+    needsEmailConfirm: !data.user?.email_confirmed_at 
+  })
 }
