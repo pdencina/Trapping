@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import type { ElementType, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
 import {
   ArrowRight,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react'
 
 type Step = 1 | 2 | 3
+type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
 
 type FormState = {
   nombres: string
@@ -52,6 +54,13 @@ const initialForm: FormState = {
   documentoReverso: null,
   selfie: null,
 }
+
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
+const KYC_BUCKET = 'kyc-documents'
 
 const steps = [
   { id: 1 as Step, title: 'Datos personales', description: 'Completa tu información' },
@@ -195,10 +204,34 @@ function UploadBox({ title, description, file, onChange }: { title: string; desc
   )
 }
 
+
+function sanitizeFileName(name: string) {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .toLowerCase()
+}
+
+async function uploadKycFile(userId: string, type: string, file: File) {
+  if (!supabase) throw new Error('Supabase no está configurado. Revisa las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.')
+
+  const extension = file.name.split('.').pop() || 'jpg'
+  const path = `${userId}/${type}-${Date.now()}-${sanitizeFileName(file.name || `archivo.${extension}`)}`
+
+  const { error } = await supabase.storage
+    .from(KYC_BUCKET)
+    .upload(path, file, { cacheControl: '3600', upsert: true })
+
+  if (error) throw error
+  return path
+}
+
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>(initialForm)
-  const [submitted, setSubmitted] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const accountCompleted = useMemo(() => {
     return Boolean(
@@ -220,9 +253,83 @@ export default function RegisterPage() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  function handleSubmit() {
-    setSubmitted(true)
-    setStep(3)
+  async function handleSubmit() {
+    setErrorMessage('')
+
+    if (!supabase) {
+      setSubmitStatus('error')
+      setErrorMessage('Supabase no está configurado. Revisa las variables de entorno del proyecto.')
+      return
+    }
+
+    if (!accountCompleted || !identityCompleted) {
+      setSubmitStatus('error')
+      setErrorMessage('Completa todos los datos y documentos antes de enviar la solicitud.')
+      return
+    }
+
+    try {
+      setSubmitStatus('loading')
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        options: {
+          data: {
+            nombres: form.nombres.trim(),
+            apellidos: form.apellidos.trim(),
+            telefono: `+56${form.telefono.replace(/\s/g, '')}`,
+            tipo_documento: form.tipoDocumento,
+            numero_documento: form.numeroDocumento.trim(),
+            kyc_status: 'pending_review',
+          },
+        },
+      })
+
+      if (signUpError) throw signUpError
+
+      const userId = signUpData.user?.id
+      if (!userId) throw new Error('No se pudo crear el usuario. Intenta nuevamente.')
+
+      const [documentFrontPath, documentBackPath, selfiePath] = await Promise.all([
+        uploadKycFile(userId, 'documento-frontal', form.documentoFrontal!),
+        uploadKycFile(userId, 'documento-reverso', form.documentoReverso!),
+        uploadKycFile(userId, 'selfie', form.selfie!),
+      ])
+
+      const profilePayload = {
+        id: userId,
+        nombres: form.nombres.trim(),
+        apellidos: form.apellidos.trim(),
+        email: form.email.trim().toLowerCase(),
+        telefono: `+56${form.telefono.replace(/\s/g, '')}`,
+        tipo_documento: form.tipoDocumento,
+        numero_documento: form.numeroDocumento.trim(),
+        kyc_status: 'pending_review',
+        role: 'user',
+        updated_at: new Date().toISOString(),
+      }
+
+      await supabase.from('profiles').upsert(profilePayload).throwOnError()
+
+      await supabase
+        .from('kyc_documents')
+        .insert({
+          user_id: userId,
+          document_front_path: documentFrontPath,
+          document_back_path: documentBackPath,
+          selfie_path: selfiePath,
+          status: 'pending_review',
+        })
+        .throwOnError()
+
+      setSubmitStatus('success')
+      setStep(3)
+    } catch (error) {
+      console.error('Error registrando usuario:', error)
+      setSubmitStatus('error')
+      setErrorMessage(error instanceof Error ? error.message : 'No se pudo completar el registro. Intenta nuevamente.')
+    }
   }
 
   return (
@@ -331,6 +438,12 @@ export default function RegisterPage() {
                   </span>
                 </label>
 
+                {submitStatus === 'error' && errorMessage ? (
+                  <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                    {errorMessage}
+                  </div>
+                ) : null}
+
                 <button
                   type="button"
                   disabled={!accountCompleted}
@@ -354,17 +467,23 @@ export default function RegisterPage() {
                   <UploadBox title="Selfie del rostro" description="Foto actual de tu rostro, con buena luz y sin lentes oscuros." file={form.selfie} onChange={(file) => update('selfie', file)} />
                 </div>
 
+                {submitStatus === 'error' && errorMessage ? (
+                  <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                    {errorMessage}
+                  </div>
+                ) : null}
+
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <button type="button" onClick={() => setStep(1)} className="h-[50px] rounded-xl border border-slate-200/80 bg-white font-extrabold text-slate-600 transition hover:bg-slate-50">
+                  <button type="button" disabled={submitStatus === 'loading'} onClick={() => setStep(1)} className="h-[50px] rounded-xl border border-slate-200/80 bg-white font-extrabold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
                     Volver
                   </button>
                   <button
                     type="button"
-                    disabled={!identityCompleted}
+                    disabled={!identityCompleted || submitStatus === 'loading'}
                     onClick={handleSubmit}
                     className="h-[50px] rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
                   >
-                    Enviar a revisión
+                    {submitStatus === 'loading' ? 'Creando cuenta...' : 'Enviar a revisión'}
                   </button>
                 </div>
               </div>
