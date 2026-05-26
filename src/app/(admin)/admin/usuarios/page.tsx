@@ -1,633 +1,349 @@
-"use client";
+'use client'
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from 'react'
+import { ArrowLeft, Check, Eye, EyeOff, FileText, Mail, Phone, QrCode, ShieldCheck, Smartphone, Upload, User } from 'lucide-react'
 
-import { Ban, Check, Download, Search, Users, TimerReset } from "lucide-react";
+type Step = 1 | 2 | 3
 
-type UserStatus = "pending_review" | "approved" | "suspended";
+const steps = [
+  { id: 1, label: 'Cuenta' },
+  { id: 2, label: 'Identidad' },
+  { id: 3, label: 'Revisión' },
+]
 
-type UserRow = {
-  id: number;
-  initials: string;
-  name: string;
-  email: string;
-  rut: string;
-  contact: string;
-  registeredDate: string;
-  registeredTime: string;
-  status: UserStatus;
-  emailVerified: boolean;
-  emailVerifiedDate: string;
-  profilePercent: number;
-};
+export default function RegisterPage() {
+  const [step, setStep] = useState<Step>(1)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [usePhoneFlow, setUsePhoneFlow] = useState(false)
 
-const baseUsers: UserRow[] = [
-  {
-    id: 1,
-    initials: "PE",
-    name: "Pablo Encina",
-    email: "pencina@armglobal.org",
-    rut: "17.339.278-8",
-    contact: "+56949616038",
-    registeredDate: "25 may 2026",
-    registeredTime: "14:32",
-    status: "pending_review",
-    emailVerified: true,
-    emailVerifiedDate: "25 may 2026",
-    profilePercent: 60,
-  },
-  {
-    id: 2,
-    initials: "AT",
-    name: "Admin Trapping",
-    email: "admin@trapping.cl",
-    rut: "21.419.516-6",
-    contact: "+56900000000",
-    registeredDate: "23 may 2026",
-    registeredTime: "10:15",
-    status: "approved",
-    emailVerified: true,
-    emailVerifiedDate: "",
-    profilePercent: 100,
-  },
-];
+  const progress = useMemo(() => `${(step / steps.length) * 100}%`, [step])
 
-const initialUsers: UserRow[] = [
-  ...baseUsers,
-  ...Array.from({ length: 31 }, (_, index) => {
-    const id = index + 3;
-    const status: UserStatus =
-      id % 9 === 0 ? "suspended" : id % 3 === 0 ? "approved" : "pending_review";
-
-    return {
-      id,
-      initials: `U${id}`,
-      name: `Usuario Demo ${id}`,
-      email: `usuario${id}@trapping.cl`,
-      rut: `11.111.${String(100 + id).padStart(3, "0")}-${id % 10}`,
-      contact: `+569000000${id}`,
-      registeredDate: "25 may 2026",
-      registeredTime: `${String(8 + (id % 10)).padStart(2, "0")}:15`,
-      status,
-      emailVerified: true,
-      emailVerifiedDate: status === "approved" ? "25 may 2026" : "",
-      profilePercent: status === "approved" ? 100 : status === "suspended" ? 35 : 60,
-    };
-  }),
-];
-
-const totalUsers = initialUsers.length;
-const pageSize = 10;
-
-const stats = [
-  {
-    label: "Total",
-    value: totalUsers,
-    description: "Usuarios registrados",
-    valueClass: "text-slate-950",
-    iconClass: "bg-violet-100 text-slate-900",
-    icon: Users,
-  },
-  {
-    label: "En revisión",
-    value: 12,
-    description: "Pendientes de revisión",
-    valueClass: "text-orange-500",
-    iconClass: "bg-orange-100 text-orange-500",
-    icon: TimerReset,
-  },
-  {
-    label: "Aprobados",
-    value: 18,
-    description: "Usuarios verificados",
-    valueClass: "text-green-600",
-    iconClass: "bg-green-100 text-green-600",
-    icon: Check,
-  },
-  {
-    label: "Suspendidos",
-    value: 3,
-    description: "Usuarios suspendidos",
-    valueClass: "text-slate-600",
-    iconClass: "bg-slate-100 text-slate-600",
-    icon: Ban,
-  },
-];
-
-function KycBadge({ status }: { status: UserStatus }) {
-  const config: Record<UserStatus, { label: string; className: string }> = {
-    pending_review: {
-      label: "En revisión",
-      className: "bg-orange-100 text-orange-700",
-    },
-    approved: {
-      label: "Aprobado",
-      className: "bg-green-100 text-green-700",
-    },
-    suspended: {
-      label: "Suspendido",
-      className: "bg-slate-100 text-slate-700",
-    },
-  };
+  const nextStep = () => setStep((current) => Math.min(current + 1, 3) as Step)
+  const prevStep = () => setStep((current) => Math.max(current - 1, 1) as Step)
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${config[status].className}`}
-    >
-      {config[status].label}
-    </span>
-  );
-}
-
-function ProfileRing({ value }: { value: number }) {
-  return (
-    <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-violet-600 bg-white text-xs font-extrabold text-slate-950">
-      {value}%
-    </div>
-  );
-}
-
-function ActionButton({
-  children,
-  tone,
-  onClick,
-}: {
-  children: React.ReactNode;
-  tone: "green" | "orange" | "red" | "violet";
-  onClick?: () => void;
-}) {
-  const tones = {
-    green: "border-green-200 bg-green-50 text-green-700 hover:bg-green-100",
-    orange:
-      "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100",
-    red: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
-    violet:
-      "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100",
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-extrabold transition ${tones[tone]}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-export default function UsuariosAdminPage() {
-  const [users, setUsers] = useState<UserRow[]>(initialUsers);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  const filteredUsers = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-
-    return users.filter((user) => {
-      const matchesSearch =
-        !term ||
-        [user.name, user.email, user.rut, user.contact].some((field) =>
-          field.toLowerCase().includes(term),
-        );
-
-      const matchesStatus =
-        statusFilter === "all" || user.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchTerm, statusFilter, users]);
-
-  const totalFilteredUsers = filteredUsers.length;
-  const totalPages = Math.max(1, Math.ceil(totalFilteredUsers / pageSize));
-  const pageStartIndex = totalFilteredUsers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const pageEndIndex = Math.min(currentPage * pageSize, totalFilteredUsers);
-
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredUsers.slice(start, start + pageSize);
-  }, [currentPage, filteredUsers]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
-
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
-  };
-
-  const paginationPages = Array.from({ length: totalPages }, (_, index) => index + 1);
-
-  const updateUserStatus = (userId: number, status: UserStatus) => {
-    setUsers((currentUsers) =>
-      currentUsers.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              status,
-              profilePercent: status === "approved" ? 100 : user.profilePercent,
-            }
-          : user,
-      ),
-    );
-  };
-
-  const showNotice = (message: string) => {
-    setNotice(message);
-    window.setTimeout(() => setNotice(null), 2800);
-  };
-
-  const requestDocs = (user: UserRow) => {
-    showNotice(`Solicitud de documentos enviada a ${user.name}`);
-  };
-
-  const openEditor = (user: UserRow) => {
-    setSelectedUser(user);
-  };
-
-  const exportUsers = () => {
-    const headers = [
-      "Usuario",
-      "Email",
-      "RUT",
-      "Contacto",
-      "Estado KYC",
-      "Perfil",
-    ];
-    const rows = filteredUsers.map((user) => [
-      user.name,
-      user.email,
-      user.rut,
-      user.contact,
-      user.status,
-      `${user.profilePercent}%`,
-    ]);
-
-    const csv = [headers, ...rows]
-      .map((row) =>
-        row
-          .map((cell) => `"${String(cell).replaceAll('\"', '\"\"')}"`)
-          .join(","),
-      )
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "usuarios-trapping.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <div className="mx-auto max-w-[1500px] space-y-6 px-6 py-8">
-      <section>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-950">
-          Usuarios
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Administra solicitudes KYC y validación de usuarios.
-        </p>
-      </section>
-
-      <section className="grid grid-cols-4 gap-4 max-[900px]:grid-cols-2 max-[640px]:grid-cols-1">
-        {stats.map(
-          ({
-            label,
-            value,
-            description,
-            valueClass,
-            iconClass,
-            icon: Icon,
-          }) => (
-            <article
-              key={label}
-              className="flex min-h-[140px] items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-              <div>
-                <p className="text-sm font-semibold text-slate-500">{label}</p>
-                <p className={`mt-4 text-4xl font-extrabold ${valueClass}`}>
-                  {value}
-                </p>
-                <p className="mt-2 text-sm text-slate-500">{description}</p>
-              </div>
-              <div
-                className={`flex h-14 w-14 items-center justify-center rounded-full ${iconClass}`}
-              >
-                <Icon size={26} strokeWidth={2.2} />
-              </div>
-            </article>
-          ),
-        )}
-      </section>
-
-      <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid min-w-[1100px] grid-cols-[1fr_240px_160px_150px] gap-3">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-              placeholder="Buscar usuario por nombre, email, RUT o celular..."
-            />
+    <main className="min-h-screen bg-[#eef7f8] px-4 py-8 text-slate-950 sm:px-6 lg:px-8">
+      <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-[2rem] bg-white shadow-xl lg:grid-cols-[0.9fr_1.1fr]">
+        <aside className="hidden bg-gradient-to-br from-violet-800 via-violet-700 to-cyan-500 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+          <div>
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-xl font-black backdrop-blur">
+              T
+            </div>
+            <h1 className="mt-8 text-4xl font-black leading-tight">
+              Crea tu cuenta de forma segura
+            </h1>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-white/80">
+              Registro moderno con validación de identidad, documentos y revisión KYC para proteger cada operación.
+            </p>
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as "all" | UserStatus)
-            }
-            className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="pending_review">En revisión</option>
-            <option value="approved">Aprobados</option>
-            <option value="suspended">Suspendidos</option>
-          </select>
+          <div className="space-y-4 rounded-3xl bg-white/10 p-6 backdrop-blur">
+            <Feature icon={ShieldCheck} title="Validación segura" text="Documento y selfie para confirmar identidad." />
+            <Feature icon={Smartphone} title="Continúa en tu teléfono" text="Escanea un QR y toma las fotos desde el celular." />
+            <Feature icon={Check} title="Revisión rápida" text="Tu solicitud queda lista para revisión administrativa." />
+          </div>
+        </aside>
 
-          <button
-            type="button"
-            onClick={() => {
-              setSearchTerm("");
-              setStatusFilter("all");
-            }}
-            className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-          >
-            Más filtros
-          </button>
+        <section className="p-6 sm:p-10">
+          <div className="mx-auto max-w-2xl">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-violet-700">Trapping</p>
+                <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Regístrate</h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  Completa los pasos para activar tu cuenta.
+                </p>
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={exportUsers}
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-violet-300 bg-white px-4 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50"
-          >
-            <Download size={15} />
-            Exportar
-          </button>
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-white text-left text-slate-950">
-                <th className="px-6 py-5 font-extrabold">Usuario</th>
-                <th className="px-6 py-5 font-extrabold">Contacto</th>
-                <th className="px-6 py-5 font-extrabold">Registrado</th>
-                <th className="px-6 py-5 font-extrabold">Estado KYC</th>
-                <th className="px-6 py-5 font-extrabold">Email verificado</th>
-                <th className="px-6 py-5 text-center font-extrabold">
-                  % Perfil
-                </th>
-                <th className="px-6 py-5 font-extrabold">Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {paginatedUsers.map((user) => (
-                <tr
-                  key={user.id}
-                  className="border-b border-slate-100 align-middle last:border-b-0"
-                >
-                  <td className="px-6 py-7">
-                    <div className="flex items-center gap-4">
-                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-extrabold text-violet-700">
-                        {user.initials}
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${user.status === "approved" ? "bg-green-500" : "bg-orange-500"}`}
-                        />
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="font-extrabold text-slate-950">
-                          {user.name}
-                        </p>
-                        <p className="mt-1 text-slate-500">{user.email}</p>
-                        <p className="mt-2 inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
-                          ID: {user.rut}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-7 text-slate-700">{user.contact}</td>
-
-                  <td className="px-6 py-7 text-slate-700">
-                    <p>{user.registeredDate}</p>
-                    <p className="mt-1">{user.registeredTime}</p>
-                  </td>
-
-                  <td className="px-6 py-7">
-                    <KycBadge status={user.status} />
-                  </td>
-
-                  <td className="px-6 py-7">
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-extrabold text-green-700">
-                      Verificado
+            <div className="mb-8">
+              <div className="mb-3 flex items-center justify-between">
+                {steps.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 text-xs font-extrabold text-slate-500">
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs ${
+                        step >= item.id
+                          ? 'border-violet-700 bg-violet-700 text-white'
+                          : 'border-slate-200 bg-white text-slate-400'
+                      }`}
+                    >
+                      {step > item.id ? <Check size={14} /> : item.id}
                     </span>
-                    {user.emailVerifiedDate ? (
-                      <p className="mt-2 text-xs text-slate-500">
-                        {user.emailVerifiedDate}
-                      </p>
-                    ) : null}
-                  </td>
+                    <span className={step >= item.id ? 'text-violet-700' : ''}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-violet-700 transition-all" style={{ width: progress }} />
+              </div>
+            </div>
 
-                  <td className="px-6 py-7">
-                    <div className="flex justify-center">
-                      <ProfileRing value={user.profilePercent} />
-                    </div>
-                  </td>
+            {step === 1 ? (
+              <AccountStep
+                showPassword={showPassword}
+                showConfirmPassword={showConfirmPassword}
+                setShowPassword={setShowPassword}
+                setShowConfirmPassword={setShowConfirmPassword}
+                onNext={nextStep}
+              />
+            ) : null}
 
-                  <td className="px-6 py-7">
-                    <div className="flex flex-nowrap items-center gap-2">
-                      <ActionButton
-                        tone="green"
-                        onClick={() => updateUserStatus(user.id, "approved")}
-                      >
-                        Aprobar
-                      </ActionButton>
-                      <ActionButton
-                        tone="orange"
-                        onClick={() => requestDocs(user)}
-                      >
-                        Solicitar docs
-                      </ActionButton>
-                      <ActionButton
-                        tone="red"
-                        onClick={() => updateUserStatus(user.id, "suspended")}
-                      >
-                        Rechazar
-                      </ActionButton>
-                      <ActionButton
-                        tone="violet"
-                        onClick={() => openEditor(user)}
-                      >
-                        Ver / Editar
-                      </ActionButton>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            {step === 2 ? (
+              <IdentityStep
+                usePhoneFlow={usePhoneFlow}
+                setUsePhoneFlow={setUsePhoneFlow}
+                onBack={prevStep}
+                onNext={nextStep}
+              />
+            ) : null}
 
-        <div className="flex flex-col gap-4 border-t border-slate-100 px-6 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Mostrando {pageStartIndex} a {pageEndIndex} de {totalFilteredUsers} usuarios
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              ‹
-            </button>
-
-            {paginationPages.map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => goToPage(page)}
-                className={
-                  page === currentPage
-                    ? "h-10 w-10 rounded-lg bg-violet-600 font-extrabold text-white"
-                    : "h-10 w-10 rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
-                }
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              type="button"
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              ›
-            </button>
+            {step === 3 ? <ReviewStep onBack={prevStep} /> : null}
           </div>
-        </div>
+        </section>
       </section>
+    </main>
+  )
+}
 
-      {notice ? (
-        <div className="fixed bottom-6 right-6 z-50 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-xl">
-          {notice}
-        </div>
-      ) : null}
+function AccountStep({
+  showPassword,
+  showConfirmPassword,
+  setShowPassword,
+  setShowConfirmPassword,
+  onNext,
+}: {
+  showPassword: boolean
+  showConfirmPassword: boolean
+  setShowPassword: (value: boolean) => void
+  setShowConfirmPassword: (value: boolean) => void
+  onNext: () => void
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Input label="Nombres" placeholder="Ingresa tus nombres" icon={User} />
+        <Input label="Apellidos" placeholder="Ingresa tus apellidos" icon={User} />
+      </div>
 
-      {selectedUser ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
-          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-600">
-                  Ver / Editar usuario
-                </p>
-                <h2 className="mt-2 text-2xl font-extrabold text-slate-950">
-                  {selectedUser.name}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Revisa la información antes de aprobar, rechazar o solicitar
-                  documentos.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedUser(null)}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-500 transition hover:bg-slate-50"
-              >
-                Cerrar
-              </button>
-            </div>
+      <div className="grid gap-4 sm:grid-cols-[0.8fr_1.2fr]">
+        <Select label="Tipo documento" options={['Seleccione', 'Cédula de Ciudadanía', 'Cédula de Identidad', 'Pasaporte']} />
+        <Input label="Nro. documento" placeholder="Número de documento" />
+      </div>
 
-            <div className="grid gap-4 px-6 py-6 sm:grid-cols-2">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase text-slate-400">
-                  Email
-                </p>
-                <p className="mt-1 font-semibold text-slate-800">
-                  {selectedUser.email}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase text-slate-400">
-                  Contacto
-                </p>
-                <p className="mt-1 font-semibold text-slate-800">
-                  {selectedUser.contact}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase text-slate-400">
-                  RUT
-                </p>
-                <p className="mt-1 font-semibold text-slate-800">
-                  {selectedUser.rut}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase text-slate-400">
-                  Estado KYC
-                </p>
-                <div className="mt-2">
-                  <KycBadge status={selectedUser.status} />
-                </div>
-              </div>
-            </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Input label="Correo electrónico" placeholder="correo@ejemplo.com" icon={Mail} />
+        <Input label="Teléfono" placeholder="+56 9 0000 0000" icon={Phone} />
+      </div>
 
-            <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-5 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  requestDocs(selectedUser);
-                  setSelectedUser(null);
-                }}
-                className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-extrabold text-orange-700 transition hover:bg-orange-100"
-              >
-                Solicitar documentos
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  updateUserStatus(selectedUser.id, "suspended");
-                  showNotice(`${selectedUser.name} fue rechazado/suspendido`);
-                  setSelectedUser(null);
-                }}
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-extrabold text-red-700 transition hover:bg-red-100"
-              >
-                Rechazar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  updateUserStatus(selectedUser.id, "approved");
-                  showNotice(`${selectedUser.name} fue aprobado correctamente`);
-                  setSelectedUser(null);
-                }}
-                className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-extrabold text-green-700 transition hover:bg-green-100"
-              >
-                Aprobar usuario
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <PasswordInput
+        label="Contraseña"
+        placeholder="Crea una contraseña segura"
+        show={showPassword}
+        onToggle={() => setShowPassword(!showPassword)}
+      />
+      <p className="-mt-3 text-xs text-slate-500">
+        Te sugerimos no usar números consecutivos, repetidos o tu fecha de nacimiento.
+      </p>
+
+      <PasswordInput
+        label="Confirma contraseña"
+        placeholder="Confirma tu contraseña"
+        show={showConfirmPassword}
+        onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
+      />
+
+      <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+        <input type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-violet-700" />
+        <span>
+          Al crear una cuenta, acepto los <b className="text-violet-700">Términos y condiciones</b> y la{' '}
+          <b className="text-violet-700">Política de privacidad</b>.
+        </span>
+      </label>
+
+      <button
+        type="button"
+        onClick={onNext}
+        className="h-13 w-full rounded-2xl bg-violet-700 px-5 py-4 text-sm font-black text-white transition hover:bg-violet-800"
+      >
+        Continuar validación
+      </button>
+
+      <p className="text-center text-sm text-slate-500">
+        ¿Ya tienes una cuenta? <span className="font-extrabold text-violet-700">Inicia sesión</span>
+      </p>
     </div>
-  );
+  )
+}
+
+function IdentityStep({
+  usePhoneFlow,
+  setUsePhoneFlow,
+  onBack,
+  onNext,
+}: {
+  usePhoneFlow: boolean
+  setUsePhoneFlow: (value: boolean) => void
+  onBack: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="rounded-3xl border border-violet-100 bg-violet-50 p-5">
+        <h3 className="text-lg font-black text-violet-900">Verifica tu identidad</h3>
+        <p className="mt-2 text-sm leading-6 text-violet-900/70">
+          Puedes subir tus documentos desde este computador o continuar desde tu teléfono para tomar fotos con la cámara.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setUsePhoneFlow(false)}
+          className={`rounded-3xl border p-5 text-left transition ${
+            !usePhoneFlow ? 'border-violet-300 bg-violet-50 ring-4 ring-violet-100' : 'border-slate-200 bg-white hover:bg-slate-50'
+          }`}
+        >
+          <Upload className="mb-4 text-violet-700" />
+          <p className="font-black text-slate-950">Subir desde este dispositivo</p>
+          <p className="mt-2 text-sm text-slate-500">Adjunta el documento y la selfie manualmente.</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setUsePhoneFlow(true)}
+          className={`rounded-3xl border p-5 text-left transition ${
+            usePhoneFlow ? 'border-violet-300 bg-violet-50 ring-4 ring-violet-100' : 'border-slate-200 bg-white hover:bg-slate-50'
+          }`}
+        >
+          <Smartphone className="mb-4 text-violet-700" />
+          <p className="font-black text-slate-950">Seguir en mi teléfono</p>
+          <p className="mt-2 text-sm text-slate-500">Escanea un QR para tomar las fotos desde el celular.</p>
+        </button>
+      </div>
+
+      {usePhoneFlow ? (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center">
+          <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-3xl border border-dashed border-violet-300 bg-violet-50 text-violet-700">
+            <QrCode size={96} />
+          </div>
+          <h4 className="mt-5 font-black text-slate-950">Escanea para continuar</h4>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+            Al abrir el link en tu teléfono podrás tomar foto del documento y selfie. Luego vuelve a esta pantalla para finalizar.
+          </p>
+          <button className="mt-5 rounded-2xl border border-violet-300 px-5 py-3 text-sm font-black text-violet-700 hover:bg-violet-50">
+            Enviar link por correo
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <UploadCard title="Documento frontal" />
+          <UploadCard title="Documento reverso" />
+          <UploadCard title="Selfie del rostro" />
+        </div>
+      )}
+
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+        <button type="button" onClick={onBack} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50">
+          <ArrowLeft size={16} /> Volver
+        </button>
+        <button type="button" onClick={onNext} className="rounded-2xl bg-violet-700 px-6 py-3 text-sm font-black text-white hover:bg-violet-800">
+          Finalizar registro
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ReviewStep({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-700">
+        <Check size={32} />
+      </div>
+      <h3 className="mt-5 text-2xl font-black text-slate-950">Tu solicitud quedó en revisión</h3>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
+        Revisaremos tus datos y documentos. Cuando tu cuenta sea validada, recibirás una notificación por correo.
+      </p>
+      <div className="mt-8 grid gap-3 rounded-2xl bg-slate-50 p-4 text-left text-sm text-slate-600">
+        <p><b>Estado:</b> Pendiente de revisión KYC</p>
+        <p><b>Documentos:</b> Recibidos / por validar</p>
+        <p><b>Siguiente paso:</b> Esperar aprobación administrativa</p>
+      </div>
+      <button type="button" onClick={onBack} className="mt-6 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50">
+        Volver a identidad
+      </button>
+    </div>
+  )
+}
+
+function Input({ label, placeholder, icon: Icon }: { label: string; placeholder: string; icon?: React.ElementType }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-black text-violet-900">{label}</span>
+      <div className="relative">
+        {Icon ? <Icon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /> : null}
+        <input
+          className={`h-13 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 ${Icon ? 'pl-11' : ''}`}
+          placeholder={placeholder}
+        />
+      </div>
+    </label>
+  )
+}
+
+function Select({ label, options }: { label: string; options: string[] }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-black text-violet-900">{label}</span>
+      <select className="h-13 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100">
+        {options.map((option) => (
+          <option key={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function PasswordInput({ label, placeholder, show, onToggle }: { label: string; placeholder: string; show: boolean; onToggle: () => void }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-black text-violet-900">{label}</span>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          className="h-13 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 pr-12 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+          placeholder={placeholder}
+        />
+        <button type="button" onClick={onToggle} className="absolute right-4 top-1/2 -translate-y-1/2 text-violet-700">
+          {show ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+    </label>
+  )
+}
+
+function UploadCard({ title }: { title: string }) {
+  return (
+    <label className="flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center transition hover:border-violet-300 hover:bg-violet-50">
+      <FileText className="text-violet-700" />
+      <p className="mt-3 text-sm font-black text-slate-950">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">JPG, PNG o PDF · Máx. 4MB</p>
+      <input type="file" className="hidden" />
+    </label>
+  )
+}
+
+function Feature({ icon: Icon, title, text }: { icon: React.ElementType; title: string; text: string }) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+        <Icon size={20} />
+      </div>
+      <div>
+        <p className="font-black">{title}</p>
+        <p className="mt-1 text-sm text-white/70">{text}</p>
+      </div>
+    </div>
+  )
 }
