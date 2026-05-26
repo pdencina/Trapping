@@ -273,23 +273,130 @@ function CheckItem({ children }: { children: ReactNode }) {
   )
 }
 
-function UploadBox({ title, description, file, onChange }: { title: string; description: string; file: File | null; onChange: (file: File | null) => void }) {
+function ContinueOnPhoneCard() {
   return (
-    <label className="group block cursor-pointer rounded-2xl border border-dashed border-slate-300 bg-white p-5 transition hover:border-violet-400 hover:bg-violet-50/40">
-      <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
-          <CreditCard size={20} />
+    <div className="rounded-[24px] border border-violet-200 bg-gradient-to-r from-violet-50 via-white to-cyan-50 p-5 shadow-sm">
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-700 shadow-sm ring-1 ring-violet-100">
+            <Smartphone size={24} />
+          </div>
+          <div>
+            <p className="text-base font-extrabold text-slate-700">Continúa la verificación desde tu celular</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">Escanea el QR o abre el link en tu teléfono para tomar las fotos directamente con la cámara.</p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-extrabold text-slate-600">{title}</p>
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
-          <p className="mt-3 inline-flex rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-extrabold text-violet-700">
-            {file ? file.name : 'Seleccionar archivo'}
-          </p>
+
+        <div className="flex items-center gap-4">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-violet-200 bg-white text-slate-600 shadow-sm">
+            <QrCode size={44} />
+          </div>
+          <button
+            type="button"
+            className="rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50"
+          >
+            Enviar link al celular
+          </button>
         </div>
       </div>
-      <input type="file" accept="image/*,.pdf" className="hidden" onChange={(event) => onChange(event.target.files?.[0] ?? null)} />
-    </label>
+    </div>
+  )
+}
+
+function CaptureUploadBox({
+  title,
+  description,
+  file,
+  onChange,
+  captureMode,
+}: {
+  title: string
+  description: string
+  file: File | null
+  onChange: (file: File | null) => void
+  captureMode: 'environment' | 'user'
+}) {
+  const previewUrl = useMemo(() => {
+    if (!file || !file.type.startsWith('image/')) return ''
+    return URL.createObjectURL(file)
+  }, [file])
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100/50">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+          <CreditCard size={21} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="font-extrabold text-slate-700">{title}</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>
+            </div>
+
+            {file ? (
+              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-extrabold text-green-700">
+                <Check size={13} />
+                Listo
+              </span>
+            ) : (
+              <span className="inline-flex w-fit rounded-full bg-orange-50 px-3 py-1 text-xs font-extrabold text-orange-600">
+                Pendiente
+              </span>
+            )}
+          </div>
+
+          {file ? (
+            <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-slate-50 p-3 sm:flex-row sm:items-center">
+              {previewUrl ? (
+                <img src={previewUrl} alt={title} className="h-20 w-28 rounded-xl object-cover ring-1 ring-slate-200" />
+              ) : (
+                <div className="flex h-20 w-28 items-center justify-center rounded-xl bg-white text-xs font-bold text-slate-400 ring-1 ring-slate-200">
+                  Archivo
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-700">{file.name}</p>
+                <p className="mt-1 text-xs text-slate-500">Puedes reemplazar esta imagen si no se ve clara.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onChange(null)}
+                className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-extrabold text-red-600 transition hover:bg-red-50"
+              >
+                Quitar
+              </button>
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-100 transition hover:scale-[1.01]">
+              Tomar foto
+              <input
+                type="file"
+                accept="image/*"
+                capture={captureMode}
+                className="hidden"
+                onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+              />
+            </label>
+
+            <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
+              Subir imagen
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+              />
+            </label>
+          </div>
+
+          <p className="mt-3 text-xs text-slate-400">Formato recomendado: JPG o PNG, buena luz, sin reflejos ni recortes.</p>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -436,12 +543,31 @@ export default function RegisterPage() {
             {step === 2 ? (
               <div>
                 <h2 className="text-2xl font-extrabold">Verifica tu identidad</h2>
-                <p className="mt-1 text-sm text-slate-500">Sube fotos claras de tu documento y una selfie para revisión KYC.</p>
+                <p className="mt-1 text-sm text-slate-500">Continúa desde tu celular o toma las fotos directamente para validar tu identidad.</p>
 
-                <div className="mt-7 grid gap-4">
-                  <UploadBox title="Documento frontal" description="Foto frontal clara de tu cédula o documento." file={form.documentoFrontal} onChange={(file) => update('documentoFrontal', file)} />
-                  <UploadBox title="Documento reverso" description="Foto reverso clara de tu cédula o documento." file={form.documentoReverso} onChange={(file) => update('documentoReverso', file)} />
-                  <UploadBox title="Selfie del rostro" description="Foto actual de tu rostro, con buena luz y sin lentes oscuros." file={form.selfie} onChange={(file) => update('selfie', file)} />
+                <div className="mt-7 space-y-4">
+                  <ContinueOnPhoneCard />
+                  <CaptureUploadBox
+                    title="Documento frontal"
+                    description="Toma una foto clara del frente de tu cédula o documento."
+                    file={form.documentoFrontal}
+                    onChange={(file) => update('documentoFrontal', file)}
+                    captureMode="environment"
+                  />
+                  <CaptureUploadBox
+                    title="Documento reverso"
+                    description="Toma una foto clara del reverso de tu cédula o documento."
+                    file={form.documentoReverso}
+                    onChange={(file) => update('documentoReverso', file)}
+                    captureMode="environment"
+                  />
+                  <CaptureUploadBox
+                    title="Selfie del rostro"
+                    description="Toma una selfie actual, con buena luz y sin lentes oscuros."
+                    file={form.selfie}
+                    onChange={(file) => update('selfie', file)}
+                    captureMode="user"
+                  />
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
