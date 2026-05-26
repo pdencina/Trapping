@@ -273,32 +273,53 @@ function CheckItem({ children }: { children: ReactNode }) {
   )
 }
 
-function ContinueOnPhoneCard() {
+function ContinueOnPhoneCard({ phone, sent, onSend }: { phone: string; sent: boolean; onSend: () => void }) {
   return (
-    <div className="rounded-[24px] border border-violet-200 bg-gradient-to-r from-violet-50 via-white to-cyan-50 p-5 shadow-sm">
-      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+    <div className="rounded-[26px] border border-violet-200 bg-gradient-to-r from-violet-50 via-white to-cyan-50 p-6 shadow-lg shadow-violet-100/50">
+      <div className="grid gap-6 lg:grid-cols-[1fr_220px] lg:items-center">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-700 shadow-sm ring-1 ring-violet-100">
-            <Smartphone size={24} />
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-700 shadow-sm ring-1 ring-violet-100">
+            <Smartphone size={28} />
           </div>
           <div>
-            <p className="text-base font-extrabold text-slate-700">Continúa la verificación desde tu celular</p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-500">Escanea el QR o abre el link en tu teléfono para tomar las fotos directamente con la cámara.</p>
+            <p className="text-lg font-extrabold text-slate-700">Haz esta validación desde tu celular</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              Para evitar subir archivos manualmente desde el computador, abre este registro en tu teléfono y la cámara se activará para capturar documento frontal, reverso y selfie.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+              <span className="rounded-full bg-white px-3 py-1 ring-1 ring-violet-100">1. Escanea QR</span>
+              <span className="rounded-full bg-white px-3 py-1 ring-1 ring-violet-100">2. Toma fotos</span>
+              <span className="rounded-full bg-white px-3 py-1 ring-1 ring-violet-100">3. Vuelve y envía</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-violet-200 bg-white text-slate-600 shadow-sm">
-            <QrCode size={44} />
+        <div className="rounded-3xl border border-violet-200 bg-white p-4 text-center shadow-sm">
+          <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-2xl bg-slate-50 text-slate-600 ring-1 ring-slate-100">
+            <QrCode size={72} />
           </div>
-          <button
-            type="button"
-            className="rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50"
-          >
-            Enviar link al celular
-          </button>
+          <p className="mt-3 text-xs font-bold text-slate-400">QR de verificación segura</p>
         </div>
       </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-slate-500 ring-1 ring-violet-100">
+          Link asociado al teléfono: <span className="font-extrabold text-slate-700">{phone || 'ingresa tu celular en el paso anterior'}</span>
+        </div>
+        <button
+          type="button"
+          onClick={onSend}
+          className="rounded-2xl bg-gradient-to-r from-violet-700 to-purple-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01]"
+        >
+          {sent ? 'Link preparado' : 'Enviar link al celular'}
+        </button>
+      </div>
+
+      {sent ? (
+        <div className="mt-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-700 ring-1 ring-green-100">
+          Listo. Cuando conectes SMS/WhatsApp/API, este botón enviará el link real al usuario.
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -309,13 +330,16 @@ function CaptureUploadBox({
   file,
   onChange,
   captureMode,
+  recommended,
 }: {
   title: string
   description: string
   file: File | null
   onChange: (file: File | null) => void
   captureMode: 'environment' | 'user'
+  recommended: string
 }) {
+  const [showManual, setShowManual] = useState(false)
   const previewUrl = useMemo(() => {
     if (!file || !file.type.startsWith('image/')) return ''
     return URL.createObjectURL(file)
@@ -358,42 +382,59 @@ function CaptureUploadBox({
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-slate-700">{file.name}</p>
-                <p className="mt-1 text-xs text-slate-500">Puedes reemplazar esta imagen si no se ve clara.</p>
+                <p className="mt-1 text-xs text-slate-500">Puedes repetir la captura si la imagen no se ve clara.</p>
               </div>
               <button
                 type="button"
                 onClick={() => onChange(null)}
                 className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-extrabold text-red-600 transition hover:bg-red-50"
               >
-                Quitar
+                Repetir
               </button>
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-100 transition hover:scale-[1.01]">
-              Tomar foto
-              <input
-                type="file"
-                accept="image/*"
-                capture={captureMode}
-                className="hidden"
-                onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-              />
-            </label>
-
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
-              Subir imagen
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-              />
-            </label>
+          <div className="mt-4 rounded-2xl bg-violet-50/70 p-4 ring-1 ring-violet-100">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-extrabold text-slate-700">Captura recomendada</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">{recommended}</p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-violet-700 to-purple-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-100 transition hover:scale-[1.01]">
+                Abrir cámara
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture={captureMode}
+                  className="hidden"
+                  onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
           </div>
 
-          <p className="mt-3 text-xs text-slate-400">Formato recomendado: JPG o PNG, buena luz, sin reflejos ni recortes.</p>
+          <button
+            type="button"
+            onClick={() => setShowManual((current) => !current)}
+            className="mt-3 text-xs font-extrabold text-slate-400 underline-offset-4 transition hover:text-violet-700 hover:underline"
+          >
+            {showManual ? 'Ocultar carga manual' : 'No puedo usar cámara, subir archivo manualmente'}
+          </button>
+
+          {showManual ? (
+            <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50">
+                Seleccionar imagen desde archivo
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              <p className="mt-2 text-xs text-slate-400">Usa esta opción solo si estás en computador o si la cámara no está disponible.</p>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -404,6 +445,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>(initialForm)
   const [submitted, setSubmitted] = useState(false)
+  const [phoneLinkSent, setPhoneLinkSent] = useState(false)
 
   const accountCompleted = useMemo(() => {
     return Boolean(
@@ -543,16 +585,17 @@ export default function RegisterPage() {
             {step === 2 ? (
               <div>
                 <h2 className="text-2xl font-extrabold">Verifica tu identidad</h2>
-                <p className="mt-1 text-sm text-slate-500">Continúa desde tu celular o toma las fotos directamente para validar tu identidad.</p>
+                <p className="mt-1 text-sm text-slate-500">La experiencia principal es continuar desde tu teléfono para usar la cámara y evitar carga manual de archivos.</p>
 
                 <div className="mt-7 space-y-4">
-                  <ContinueOnPhoneCard />
+                  <ContinueOnPhoneCard phone={`${phoneCountries.find((country) => country.code === form.phoneCountry)?.dial ?? '+56'} ${form.telefono}`} sent={phoneLinkSent} onSend={() => setPhoneLinkSent(true)} />
                   <CaptureUploadBox
                     title="Documento frontal"
                     description="Toma una foto clara del frente de tu cédula o documento."
                     file={form.documentoFrontal}
                     onChange={(file) => update('documentoFrontal', file)}
                     captureMode="environment"
+                    recommended="Usa tu celular, encuadra el documento completo y evita reflejos."
                   />
                   <CaptureUploadBox
                     title="Documento reverso"
@@ -560,6 +603,7 @@ export default function RegisterPage() {
                     file={form.documentoReverso}
                     onChange={(file) => update('documentoReverso', file)}
                     captureMode="environment"
+                    recommended="Da vuelta el documento y vuelve a tomar una foto completa y nítida."
                   />
                   <CaptureUploadBox
                     title="Selfie del rostro"
@@ -567,6 +611,7 @@ export default function RegisterPage() {
                     file={form.selfie}
                     onChange={(file) => update('selfie', file)}
                     captureMode="user"
+                    recommended="Mira directo a la cámara, con buena luz y sin lentes oscuros."
                   />
                 </div>
 
