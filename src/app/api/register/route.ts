@@ -45,6 +45,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No se pudo crear el usuario' }, { status: 500 })
   }
 
+  // Supabase retorna user con identities vacías cuando el email ya existe sin confirmar
+  if (data.user.identities && data.user.identities.length === 0) {
+    return NextResponse.json({ error: 'Este email ya está registrado. Si no verificaste tu cuenta, revisa tu bandeja de entrada.' }, { status: 400 })
+  }
+
   const service = createServiceClient()
   const { error: profileError } = await service.from('profiles').update({
     name: parsed.data.name,
