@@ -155,6 +155,8 @@ export default function UsuariosAdminPage() {
   const [users, setUsers] = useState<UserRow[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all");
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const filteredUsers = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -187,12 +189,17 @@ export default function UsuariosAdminPage() {
     );
   };
 
+  const showNotice = (message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(null), 2800);
+  };
+
   const requestDocs = (user: UserRow) => {
-    window.alert(`Solicitud de documentos enviada a ${user.name}`);
+    showNotice(`Solicitud de documentos enviada a ${user.name}`);
   };
 
   const openEditor = (user: UserRow) => {
-    window.alert(`Abrir edición de usuario: ${user.name}`);
+    setSelectedUser(user);
   };
 
   const exportUsers = () => {
@@ -449,6 +456,110 @@ export default function UsuariosAdminPage() {
           </div>
         </div>
       </section>
+
+      {notice ? (
+        <div className="fixed bottom-6 right-6 z-50 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-xl">
+          {notice}
+        </div>
+      ) : null}
+
+      {selectedUser ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-600">
+                  Ver / Editar usuario
+                </p>
+                <h2 className="mt-2 text-2xl font-extrabold text-slate-950">
+                  {selectedUser.name}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Revisa la información antes de aprobar, rechazar o solicitar
+                  documentos.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-500 transition hover:bg-slate-50"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="grid gap-4 px-6 py-6 sm:grid-cols-2">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase text-slate-400">
+                  Email
+                </p>
+                <p className="mt-1 font-semibold text-slate-800">
+                  {selectedUser.email}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase text-slate-400">
+                  Contacto
+                </p>
+                <p className="mt-1 font-semibold text-slate-800">
+                  {selectedUser.contact}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase text-slate-400">
+                  RUT
+                </p>
+                <p className="mt-1 font-semibold text-slate-800">
+                  {selectedUser.rut}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase text-slate-400">
+                  Estado KYC
+                </p>
+                <div className="mt-2">
+                  <KycBadge status={selectedUser.status} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  requestDocs(selectedUser);
+                  setSelectedUser(null);
+                }}
+                className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-extrabold text-orange-700 transition hover:bg-orange-100"
+              >
+                Solicitar documentos
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateUserStatus(selectedUser.id, "suspended");
+                  showNotice(`${selectedUser.name} fue rechazado/suspendido`);
+                  setSelectedUser(null);
+                }}
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-extrabold text-red-700 transition hover:bg-red-100"
+              >
+                Rechazar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateUserStatus(selectedUser.id, "approved");
+                  showNotice(`${selectedUser.name} fue aprobado correctamente`);
+                  setSelectedUser(null);
+                }}
+                className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-extrabold text-green-700 transition hover:bg-green-100"
+              >
+                Aprobar usuario
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
