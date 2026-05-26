@@ -161,7 +161,7 @@ export default function UsuariosAdminPage() {
         </p>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-4 gap-4 max-[900px]:grid-cols-2 max-[640px]:grid-cols-1">
         {stats.map(({ label, value, description, valueClass, iconClass, icon: Icon }) => (
           <article
             key={label}
@@ -179,8 +179,8 @@ export default function UsuariosAdminPage() {
         ))}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_240px_160px_150px]">
+      <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid min-w-[1100px] grid-cols-[1fr_240px_160px_150px] gap-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -275,7 +275,7 @@ export default function UsuariosAdminPage() {
                   </td>
 
                   <td className="px-6 py-7">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-nowrap items-center gap-2">
                       <ActionButton tone="green">Aprobar</ActionButton>
                       <ActionButton tone="orange">Solicitar docs</ActionButton>
                       <ActionButton tone="red">Rechazar</ActionButton>
