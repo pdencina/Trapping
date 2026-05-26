@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Ban, Check, Download, Search, Users, TimerReset } from "lucide-react";
 
@@ -21,7 +21,7 @@ type UserRow = {
   profilePercent: number;
 };
 
-const initialUsers: UserRow[] = [
+const baseUsers: UserRow[] = [
   {
     id: 1,
     initials: "PE",
@@ -52,7 +52,32 @@ const initialUsers: UserRow[] = [
   },
 ];
 
-const totalUsers = 33;
+const initialUsers: UserRow[] = [
+  ...baseUsers,
+  ...Array.from({ length: 31 }, (_, index) => {
+    const id = index + 3;
+    const status: UserStatus =
+      id % 9 === 0 ? "suspended" : id % 3 === 0 ? "approved" : "pending_review";
+
+    return {
+      id,
+      initials: `U${id}`,
+      name: `Usuario Demo ${id}`,
+      email: `usuario${id}@trapping.cl`,
+      rut: `11.111.${String(100 + id).padStart(3, "0")}-${id % 10}`,
+      contact: `+569000000${id}`,
+      registeredDate: "25 may 2026",
+      registeredTime: `${String(8 + (id % 10)).padStart(2, "0")}:15`,
+      status,
+      emailVerified: true,
+      emailVerifiedDate: status === "approved" ? "25 may 2026" : "",
+      profilePercent: status === "approved" ? 100 : status === "suspended" ? 35 : 60,
+    };
+  }),
+];
+
+const totalUsers = initialUsers.length;
+const pageSize = 10;
 
 const stats = [
   {
@@ -155,6 +180,7 @@ export default function UsuariosAdminPage() {
   const [users, setUsers] = useState<UserRow[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -174,6 +200,32 @@ export default function UsuariosAdminPage() {
       return matchesSearch && matchesStatus;
     });
   }, [searchTerm, statusFilter, users]);
+
+  const totalFilteredUsers = filteredUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalFilteredUsers / pageSize));
+  const pageStartIndex = totalFilteredUsers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEndIndex = Math.min(currentPage * pageSize, totalFilteredUsers);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [currentPage, filteredUsers]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+  };
+
+  const paginationPages = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   const updateUserStatus = (userId: number, status: UserStatus) => {
     setUsers((currentUsers) =>
@@ -344,7 +396,7 @@ export default function UsuariosAdminPage() {
             </thead>
 
             <tbody>
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr
                   key={user.id}
                   className="border-b border-slate-100 align-middle last:border-b-0"
@@ -434,23 +486,39 @@ export default function UsuariosAdminPage() {
 
         <div className="flex flex-col gap-4 border-t border-slate-100 px-6 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            Mostrando {filteredUsers.length ? 1 : 0} a {filteredUsers.length} de{" "}
-            {totalUsers} usuarios
+            Mostrando {pageStartIndex} a {pageEndIndex} de {totalFilteredUsers} usuarios
           </p>
           <div className="flex items-center gap-2">
-            <button className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+            >
               ‹
             </button>
-            <button className="h-10 w-10 rounded-lg bg-violet-600 font-extrabold text-white">
-              1
-            </button>
-            <button className="h-10 w-10 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
-              2
-            </button>
-            <button className="h-10 w-10 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
-              3
-            </button>
-            <button className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+
+            {paginationPages.map((page) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => goToPage(page)}
+                className={
+                  page === currentPage
+                    ? "h-10 w-10 rounded-lg bg-violet-600 font-extrabold text-white"
+                    : "h-10 w-10 rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                }
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+            >
               ›
             </button>
           </div>
