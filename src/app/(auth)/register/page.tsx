@@ -11,7 +11,6 @@ import {
   CreditCard,
   Eye,
   EyeOff,
-  IdCard,
   Lock,
   Mail,
   MonitorCheck,
@@ -181,7 +180,7 @@ function UploadBox({ title, description, file, onChange }: { title: string; desc
     <label className="group block cursor-pointer rounded-2xl border border-dashed border-slate-300 bg-white p-5 transition hover:border-violet-400 hover:bg-violet-50/40">
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
-          <IdCard size={20} />
+          <CreditCard size={20} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-extrabold text-slate-950">{title}</p>
@@ -286,7 +285,7 @@ export default function RegisterPage() {
                   </div>
                   <div>
                     <Label>Número de documento *</Label>
-                    <InputWithIcon icon={IdCard} placeholder="Ej: 12.345.678-9" value={form.numeroDocumento} onChange={(event) => update('numeroDocumento', event.target.value)} />
+                    <InputWithIcon icon={CreditCard} placeholder="Ej: 12.345.678-9" value={form.numeroDocumento} onChange={(event) => update('numeroDocumento', event.target.value)} />
                   </div>
                   <div className="md:col-span-2">
                     <Label>Teléfono celular *</Label>
