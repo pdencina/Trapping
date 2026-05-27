@@ -9,24 +9,39 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) {
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Error al verificar email')}`)
+    }
 
-    // Verificar si el usuario ya completó KYC
+    // Obtener perfil del usuario recién confirmado
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('validado, documento')
+        .select('documento, validado, role')
         .eq('id', user.id)
         .single()
 
-      // Si no tiene documento cargado → ir a KYC
-      if (profile && !profile.documento) {
+      // Admin → dashboard directo
+      if (profile?.role === 'Admin') {
+        return NextResponse.redirect(`${origin}/dashboard`)
+      }
+
+      // Sin documentos → ir a KYC
+      if (!profile?.documento) {
         return NextResponse.redirect(`${origin}/register/kyc`)
       }
+
+      // Con documentos pero pendiente → pending
+      if (profile?.validado !== 1) {
+        return NextResponse.redirect(`${origin}/pending`)
+      }
+
+      // Todo ok → dashboard
+      return NextResponse.redirect(`${origin}/dashboard`)
     }
   }
 
-  // Si ya tiene documentos o algo falló → dashboard
-  return NextResponse.redirect(`${origin}/dashboard`)
+  return NextResponse.redirect(`${origin}/login`)
 }

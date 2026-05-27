@@ -2,9 +2,14 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Rutas que requieren estar logueado
 const PROTECTED_ROUTES = ['/dashboard', '/transferir', '/operaciones', '/contactos', '/billetera', '/simulador', '/perfil', '/admin']
+// Rutas solo admin
 const ADMIN_ROUTES = ['/admin']
-const AUTH_ROUTES = ['/login', '/register']
+// Rutas de auth (redirigir al dashboard si ya está logueado)
+const AUTH_ROUTES = ['/login']
+// Rutas KYC — accesibles con cualquier estado de validación
+const KYC_ROUTES = ['/register/kyc', '/kyc', '/pending', '/perfil']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -30,34 +35,60 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  if (!user && PROTECTED_ROUTES.some((r: string) => path.startsWith(r))) {
+  // Sin sesión → redirigir a login si intenta acceder a rutas protegidas
+  if (!user && PROTECTED_ROUTES.some(r => path.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
+  // Sin sesión → KYC routes también requieren sesión
+  if (!user && KYC_ROUTES.filter(r => r !== '/register').some(r => path.startsWith(r))) {
+    // /register/kyc y /kyc/* necesitan sesión — si no hay, login
+    if (path.startsWith('/register/kyc') || path.startsWith('/kyc/')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  }
+
   if (user) {
-    if (AUTH_ROUTES.some((r: string) => path === r)) {
+    // Logueado en login → dashboard
+    if (AUTH_ROUTES.some(r => path === r)) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)
     }
 
-    if (PROTECTED_ROUTES.some((r: string) => path.startsWith(r))) {
+    // Para rutas protegidas Y rutas KYC → verificar estado del perfil
+    const needsProfileCheck = 
+      PROTECTED_ROUTES.some(r => path.startsWith(r)) ||
+      path.startsWith('/register/kyc') ||
+      path.startsWith('/kyc/')
+
+    if (needsProfileCheck) {
       const { data: profile } = await supabase
-        .from('profiles').select('validado, role').eq('id', user.id).single()
+        .from('profiles').select('validado, role, documento').eq('id', user.id).single()
 
       if (profile) {
-        if (ADMIN_ROUTES.some((r: string) => path.startsWith(r)) && profile.role !== 'Admin') {
+        // Solo admin puede acceder a rutas admin
+        if (ADMIN_ROUTES.some(r => path.startsWith(r)) && profile.role !== 'Admin') {
           const url = request.nextUrl.clone()
           url.pathname = '/dashboard'
           return NextResponse.redirect(url)
         }
+
+        // Usuario pendiente de validación
         if (profile.validado !== 1 && profile.role !== 'Admin') {
-          const allowedWhenPending = ['/pending', '/perfil', '/register/kyc', '/kyc']
-          if (!allowedWhenPending.some((r: string) => path.startsWith(r))) {
+          // Siempre puede acceder a KYC, pending y perfil
+          if (KYC_ROUTES.some(r => path.startsWith(r))) {
+            return supabaseResponse // dejar pasar
+          }
+          // Cualquier otra ruta protegida → mandar a pending o kyc
+          if (PROTECTED_ROUTES.some(r => path.startsWith(r))) {
             const url = request.nextUrl.clone()
-            url.pathname = '/pending'
+            // Si no tiene documentos → ir a kyc primero
+            url.pathname = !profile.documento ? '/register/kyc' : '/pending'
             return NextResponse.redirect(url)
           }
         }
