@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(url)
         }
         if (profile.validado !== 1 && profile.role !== 'Admin') {
-          const allowedWhenPending = ['/pending', '/perfil']
+          const allowedWhenPending = ['/pending', '/perfil', '/register/kyc', '/kyc']
           if (!allowedWhenPending.some((r: string) => path.startsWith(r))) {
             const url = request.nextUrl.clone()
             url.pathname = '/pending'
