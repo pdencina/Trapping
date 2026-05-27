@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronDown,
   CreditCard, Eye, EyeOff, Lock, Mail, MonitorCheck,
@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
-import { createClient } from '@/lib/supabase/client'
 
 type FormState = {
   firstName: string; lastName: string; documentType: string
@@ -122,136 +121,47 @@ function SecuritySidebar() {
   )
 }
 
-// ── PASO 2: KYC con QR real ─────────────────────────────────────────
+// ── PASO 2: Instrucciones para confirmar email ──────────────────────
 function Step2KYC({ phone, onBack, onDone }: { phone: string; onBack: () => void; onDone: () => void }) {
-  const [token, setToken] = useState<string | null>(null)
-  const [qrUrl, setQrUrl] = useState<string | null>(null)
-  const [kycStatus, setKycStatus] = useState<'loading' | 'waiting' | 'front_done' | 'back_done' | 'completed'>('loading')
-
-  // Generar sesión KYC y QR real
-  useEffect(() => {
-    const init = async () => {
-      const { crearSesionKYC } = await import('@/lib/actions/kyc')
-      const result = await crearSesionKYC()
-      if ('error' in result) return
-
-      setToken(result.token)
-
-      const QRCode = (await import('qrcode')).default
-      const kycUrl = `${window.location.origin}/kyc/${result.token}`
-      const qr = await QRCode.toDataURL(kycUrl, {
-        width: 200, margin: 1,
-        color: { dark: '#4c1d95', light: '#ffffff' },
-      })
-      setQrUrl(qr)
-      setKycStatus('waiting')
-
-      // Si es móvil, redirigir directo
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        window.location.href = kycUrl
-      }
-    }
-    init()
-  }, [])
-
-  // Polling cada 3s
-  const poll = useCallback(async () => {
-    if (!token) return
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('kyc_sessions').select('status').eq('token', token).single()
-    if (data?.status === 'completed') {
-      setKycStatus('completed')
-      setTimeout(onDone, 1500)
-    } else if (data?.status === 'back_done') setKycStatus('back_done')
-    else if (data?.status === 'front_done') setKycStatus('front_done')
-  }, [token, onDone])
-
-  useEffect(() => {
-    if (!token || kycStatus === 'completed' || kycStatus === 'loading') return
-    const interval = setInterval(poll, 3000)
-    return () => clearInterval(interval)
-  }, [token, kycStatus, poll])
-
-  const statusMsg = {
-    loading: null,
-    waiting: '⏳ Esperando que escanees el QR...',
-    front_done: '✓ Frente capturado — ahora toma el dorso en tu celular',
-    back_done: '✓ Ambas fotos listas — procesando...',
-    completed: '✅ ¡Verificación completada!',
-  }[kycStatus]
-
-  const mobileUrl = token ? `/kyc/${token}` : '#'
-
   return (
     <>
-      <h2 className="text-2xl font-extrabold text-slate-700">Verifica tu identidad desde tu celular</h2>
+      <h2 className="text-2xl font-extrabold text-slate-700">Confirma tu correo para continuar</h2>
       <p className="mt-2 text-sm leading-6 text-slate-500">
-        Por seguridad, la captura de documento se realiza desde la cámara del teléfono.
+        Antes de verificar tu identidad, necesitas confirmar tu email.
       </p>
 
-      <div className="mt-8 rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-cyan-50 p-6 shadow-sm">
-        <div className="grid grid-cols-[1fr_180px] gap-6 max-sm:grid-cols-1">
-          <div>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-200">
-              <Phone size={24} />
-            </div>
-            <h3 className="mt-5 text-xl font-extrabold text-slate-700">Continúa en tu teléfono</h3>
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              Escanea el QR con tu cámara. Se activará el flujo guiado para fotografiar tu documento (frente y dorso).
-            </p>
-            <div className="mt-5 grid grid-cols-3 gap-2 text-xs font-bold text-slate-600 max-sm:grid-cols-1">
-              {['1. Escanea QR', '2. Toma fotos', '3. Envía revisión'].map(t => (
-                <span key={t} className="rounded-full border border-slate-200 bg-white px-3 py-2">{t}</span>
-              ))}
-            </div>
+      <div className="mt-8 rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-cyan-50 p-8 text-center">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-violet-100 text-violet-600 mb-5">
+          <Mail size={40} />
+        </div>
+        <h3 className="text-xl font-extrabold text-slate-700 mb-3">Revisa tu bandeja de entrada</h3>
+        <p className="text-sm text-slate-500 leading-6 max-w-sm mx-auto">
+          Te enviamos un correo de confirmación. Al hacer clic en el enlace, serás redirigido automáticamente para fotografiar tu documento de identidad.
+        </p>
 
-            {/* Estado en tiempo real */}
-            {statusMsg && (
-              <div className={`mt-4 rounded-xl p-3 text-xs font-semibold ${kycStatus === 'completed' ? 'bg-green-50 text-green-700' : kycStatus === 'back_done' ? 'bg-blue-50 text-blue-700' : kycStatus === 'front_done' ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-500'}`}>
-                {statusMsg}
-              </div>
-            )}
-          </div>
-
-          {/* QR real */}
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-violet-200 bg-white p-4 text-center shadow-sm">
-            {qrUrl ? (
-              <img src={qrUrl} alt="QR KYC" className="w-36 h-36 rounded-xl" />
-            ) : (
-              <div className="w-36 h-36 flex items-center justify-center">
-                <RefreshCw size={24} className="text-violet-400 animate-spin" />
-              </div>
-            )}
-            <p className="mt-2 text-xs font-bold text-slate-500">QR de verificación segura</p>
-          </div>
+        <div className="mt-6 space-y-3 text-sm text-left max-w-sm mx-auto">
+          {[
+            '1. Abre el correo de Trapping en tu bandeja',
+            '2. Haz clic en "Confirmar email"',
+            '3. Serás redirigido al paso de verificación de identidad',
+            '4. Fotografía tu CI desde tu celular',
+          ].map(step => (
+            <div key={step} className="flex items-start gap-3 bg-white rounded-xl p-3 border border-violet-100">
+              <span className="text-violet-600 font-bold flex-shrink-0">→</span>
+              <span className="text-slate-600">{step}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Link directo móvil */}
-        <div className="mt-6 grid grid-cols-[1fr_auto] gap-3 max-sm:grid-cols-1">
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
-            Link asociado al teléfono: <span className="font-extrabold text-slate-700">{phone}</span>
-          </div>
-          <a href={mobileUrl}
-            className="inline-flex h-12 items-center justify-center rounded-xl bg-violet-600 px-6 text-sm font-extrabold text-white shadow-lg shadow-violet-200 transition hover:bg-violet-700"
-          >
-            Abrir flujo móvil
-          </a>
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-bold leading-6 text-green-700">
-        Este paso reemplaza la carga manual desde Windows. La carga de archivos queda solo como respaldo técnico en la ruta móvil.
+        <p className="mt-6 text-xs text-slate-400">
+          ¿No llegó el correo? Revisa tu carpeta de spam.
+        </p>
       </div>
 
       <div className="mt-6 flex gap-3">
         <button type="button" onClick={onBack}
           className="h-13 flex-1 rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm font-extrabold text-slate-600 transition hover:bg-slate-50">
           Volver
-        </button>
-        <button type="button" onClick={onDone}
-          className="h-13 flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-purple-400 px-5 py-4 text-sm font-extrabold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01]">
-          Ya finalicé en mi teléfono
         </button>
       </div>
     </>
@@ -271,6 +181,7 @@ export default function RegisterPage() {
   // Cargar tipos de documento
   useEffect(() => {
     const load = async () => {
+      const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
       const { data } = await supabase.from('tipos_documentos').select('id, nombre_documento').is('deleted_at', null).order('nombre_documento')
       setTiposDoc(data ?? [])
@@ -480,8 +391,7 @@ export default function RegisterPage() {
                   <p className="leading-6">Al hacer clic en el enlace del correo, te llevaremos directamente a fotografiar tu documento de identidad.</p>
                 </div>
                 <p className="mt-6 text-xs text-slate-400">
-                  ¿No llegó el correo? Revisa tu carpeta de spam o{' '}
-                  <button onClick={handleContinue} className="text-violet-600 underline font-semibold">reenviar</button>
+                  ¿No llegó el correo? Revisa tu carpeta de spam.
                 </p>
               </div>
             )}
