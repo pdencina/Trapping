@@ -1,7 +1,6 @@
 'use client'
 // src/app/kyc/[token]/page.tsx
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { CheckCircle2, Camera, RotateCcw, Upload, ChevronRight, Shield } from 'lucide-react'
 
 type Step = 'intro' | 'front_camera' | 'front_preview' | 'back_camera' | 'back_preview' | 'uploading' | 'done' | 'error'
@@ -20,20 +19,14 @@ export default function KYCMobilePage({ params }: { params: { token: string } })
   const frontInputRef = useRef<HTMLInputElement>(null)
   const backInputRef = useRef<HTMLInputElement>(null)
 
-  // Verificar que el token es válido
+  // Verificar que el token es válido via API
   useEffect(() => {
     const check = async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('kyc_sessions')
-        .select('status, user_id, expires_at')
-        .eq('token', token)
-        .single()
-
-      if (error || !data) { setStep('error'); setError('Sesión no encontrada o inválida'); return }
-      if (new Date(data.expires_at) < new Date()) { setStep('error'); setError('Esta sesión ha expirado. Genera un nuevo QR desde tu computador.'); return }
+      const res = await fetch(`/api/kyc/check?token=${token}`)
+      if (!res.ok) { setStep('error'); setError('Sesión no encontrada o inválida'); return }
+      const data = await res.json()
+      if (data.expired) { setStep('error'); setError('Esta sesión ha expirado. Genera un nuevo QR desde tu computador.'); return }
       if (data.status === 'completed') { setStep('done'); return }
-
       setSessionData(data)
     }
     check()
@@ -63,21 +56,15 @@ export default function KYCMobilePage({ params }: { params: { token: string } })
     if (!frontFile || !sessionData) return
     setUploading(true)
 
-    const supabase = createClient()
-    const ext = frontFile.name.split('.').pop() ?? 'jpg'
-    const path = `${sessionData.user_id}/kyc-front-${Date.now()}.${ext}`
+    const fd = new FormData()
+    fd.append('token', token)
+    fd.append('side', 'front')
+    fd.append('file', frontFile)
 
-    const { error: uploadError } = await supabase.storage
-      .from('documentos')
-      .upload(path, frontFile, { upsert: true })
+    const res = await fetch('/api/kyc/upload', { method: 'POST', body: fd })
+    const json = await res.json()
 
-    if (uploadError) { setError(`Error subiendo foto: ${uploadError.message}`); setUploading(false); return }
-
-    // Actualizar sesión KYC
-    await supabase.from('kyc_sessions').update({
-      status: 'front_done',
-      front_path: path,
-    }).eq('token', token)
+    if (!res.ok) { setError(json.error ?? 'Error subiendo foto'); setUploading(false); return }
 
     setUploading(false)
     setStep('back_camera')
@@ -87,36 +74,15 @@ export default function KYCMobilePage({ params }: { params: { token: string } })
     if (!backFile || !sessionData) return
     setUploading(true)
 
-    const supabase = createClient()
-    const ext = backFile.name.split('.').pop() ?? 'jpg'
-    const path = `${sessionData.user_id}/kyc-back-${Date.now()}.${ext}`
+    const fd = new FormData()
+    fd.append('token', token)
+    fd.append('side', 'back')
+    fd.append('file', backFile)
 
-    const { error: uploadError } = await supabase.storage
-      .from('documentos')
-      .upload(path, backFile, { upsert: true })
+    const res = await fetch('/api/kyc/upload', { method: 'POST', body: fd })
+    const json = await res.json()
 
-    if (uploadError) { setError(`Error subiendo foto: ${uploadError.message}`); setUploading(false); return }
-
-    // Obtener el front_path de la sesión
-    const { data: session } = await supabase
-      .from('kyc_sessions')
-      .select('front_path')
-      .eq('token', token)
-      .single()
-
-    // Actualizar sesión y perfil
-    await supabase.from('kyc_sessions').update({
-      status: 'completed',
-      back_path: path,
-    }).eq('token', token)
-
-    // Actualizar el profile del usuario
-    if (session?.front_path) {
-      await supabase.from('profiles').update({
-        documento: session.front_path,
-        foto: path,
-      }).eq('id', sessionData.user_id)
-    }
+    if (!res.ok) { setError(json.error ?? 'Error subiendo foto'); setUploading(false); return }
 
     setUploading(false)
     setStep('done')
