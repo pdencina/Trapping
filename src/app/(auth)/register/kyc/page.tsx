@@ -58,7 +58,9 @@ export default function KYCPage() {
 
     if (data?.status === 'completed') {
       setStatus('completed')
-      setTimeout(() => router.push('/verify-email'), 2000)
+      setTimeout(() => router.push('/pending'), 2000)
+    } else if ((data?.status as string) === 'selfie_done') {
+      setStatus('back_done' as any)
     } else if (data?.status === 'back_done') {
       setStatus('back_done')
     } else if (data?.status === 'front_done') {
@@ -82,13 +84,14 @@ export default function KYCPage() {
   const mins = Math.floor(timeLeft / 60)
   const secs = timeLeft % 60
 
-  const stepStatusMap: Record<string, {front: string; back: string}> = {
-    waiting: { front: 'pending', back: 'pending' },
-    front_done: { front: 'done', back: 'pending' },
-    back_done: { front: 'done', back: 'done' },
-    completed: { front: 'done', back: 'done' },
+  const stepStatusMap: Record<string, {front: string; back: string; selfie: string}> = {
+    waiting:    { front: 'pending', back: 'pending', selfie: 'pending' },
+    front_done: { front: 'done',    back: 'pending', selfie: 'pending' },
+    back_done:  { front: 'done',    back: 'done',    selfie: 'pending' },
+    selfie_done:{ front: 'done',    back: 'done',    selfie: 'done'    },
+    completed:  { front: 'done',    back: 'done',    selfie: 'done'    },
   }
-  const stepStatus = stepStatusMap[status] ?? { front: 'pending', back: 'pending' }
+  const stepStatus = stepStatusMap[status] ?? { front: 'pending', back: 'pending', selfie: 'pending' }
 
   if (status === 'loading') {
     return (
@@ -173,12 +176,13 @@ export default function KYCPage() {
               <h3 className="font-semibold text-gray-900 mb-4">Progreso de verificación</h3>
               <div className="space-y-4">
                 {[
-                  { key: 'front', label: 'Frente del documento', desc: 'Foto clara del frente de tu CI o pasaporte' },
-                  { key: 'back',  label: 'Dorso del documento',  desc: 'Foto clara del dorso con el código de barras' },
+                  { key: 'front',  label: 'Frente del documento', desc: 'Foto clara del frente de tu CI o pasaporte' },
+                  { key: 'back',   label: 'Dorso del documento',  desc: 'Foto clara del dorso con el código de barras' },
+                  { key: 'selfie', label: 'Selfie de verificación', desc: 'Foto tuya mirando a la cámara frontal' },
                 ].map(step => (
                   <div key={step.key} className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                      stepStatus[step.key as 'front' | 'back'] === 'done'
+                      stepStatus[step.key as 'front' | 'back' | 'selfie'] === 'done'
                         ? 'bg-green-500'
                         : status === 'waiting' && step.key === 'front'
                         ? 'bg-brand-600 animate-pulse'
@@ -186,13 +190,13 @@ export default function KYCPage() {
                         ? 'bg-brand-600 animate-pulse'
                         : 'bg-gray-200'
                     }`}>
-                      {stepStatus[step.key as 'front' | 'back'] === 'done'
+                      {stepStatus[step.key as 'front' | 'back' | 'selfie'] === 'done'
                         ? <CheckCircle2 size={20} className="text-white" />
                         : <span className="text-white text-sm font-bold">{step.key === 'front' ? '1' : '2'}</span>
                       }
                     </div>
                     <div>
-                      <p className={`font-medium text-sm ${stepStatus[step.key as 'front' | 'back'] === 'done' ? 'text-green-700' : 'text-gray-700'}`}>
+                      <p className={`font-medium text-sm ${stepStatus[step.key as 'front' | 'back' | 'selfie'] === 'done' ? 'text-green-700' : 'text-gray-700'}`}>
                         {step.label}
                       </p>
                       <p className="text-xs text-gray-400">{step.desc}</p>
@@ -209,8 +213,9 @@ export default function KYCPage() {
                 'bg-gray-50 text-gray-500'
               }`}>
                 {status === 'waiting' && '⏳ Esperando que escanees el QR...'}
-                {status === 'front_done' && '✓ Frente capturado — ahora toma el dorso'}
-                {status === 'back_done' && '✓ Ambas fotos listas — confirmando...'}
+                {status === 'front_done' && '✓ Frente capturado — ahora fotografía el dorso'}
+                {status === 'back_done' && '✓ Dorso listo — ahora tómate una selfie'}
+                {(status as string) === 'selfie_done' && '✓ Selfie lista — procesando...'}
                 {(status as string) === 'completed' && '✅ ¡Verificación completada!'}
               </div>
             </div>
