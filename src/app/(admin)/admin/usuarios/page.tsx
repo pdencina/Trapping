@@ -1,9 +1,9 @@
 // src/app/(admin)/admin/usuarios/page.tsx
 import { createServiceClient } from '@/lib/supabase/server'
-import { getValidadoLabel } from '@/utils/format'
 import { revalidatePath } from 'next/cache'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { Users, CheckCircle2, Clock, XCircle, FileCheck, FileX, ChevronRight } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Admin · Usuarios' }
@@ -11,378 +11,227 @@ export const metadata: Metadata = { title: 'Admin · Usuarios' }
 async function cambiarValidado(userId: string, validado: number, email: string, nombre: string) {
   'use server'
   const supabase = createServiceClient()
-
   await supabase.from('profiles').update({ validado }).eq('id', userId)
 
-  // Enviar email de notificación via Resend
-  if (validado === 1) {
-    // Aprobado — enviar email de bienvenida
+  if (validado === 1 || validado === 2) {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: `Trapping <no-reply@${process.env.RESEND_DOMAIN ?? 'trapping.cl'}>`,
         to: email,
-        subject: '¡Tu cuenta fue aprobada! Ya puedes enviar dinero 🎉',
-        html: `
-          <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px">
-            <div style="background:#5b21b6;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
-              <h1 style="color:#fff;font-size:24px;margin:0">Trapping</h1>
-            </div>
-            <h2 style="color:#111827;font-size:20px">¡Hola${nombre ? `, ${nombre}` : ''}! Tu cuenta fue aprobada 🎉</h2>
-            <p style="color:#6b7280;line-height:1.6">
-              Nuestro equipo revisó tu documentación y todo está en orden.
-              Ya puedes acceder a tu cuenta y comenzar a enviar dinero al exterior.
-            </p>
-            <div style="background:#f9fafb;border-radius:8px;padding:16px;margin:24px 0">
-              <p style="color:#374151;font-size:14px;margin:0">
-                ✅ Cuenta verificada<br/>
-                ✅ Documentos aprobados<br/>
-                ✅ Lista para operar
-              </p>
-            </div>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/login"
-               style="display:inline-block;background:#5b21b6;color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:15px">
-              Ingresar a mi cuenta →
-            </a>
-            <p style="color:#9ca3af;font-size:12px;margin-top:32px">
-              Trapping · Plataforma de remesas desde Chile
-            </p>
-          </div>
-        `,
-      }),
-    }).catch(() => {}) // No fallar si el email no se envía
-  } else if (validado === 2) {
-    // Rechazado — notificar también
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: `Trapping <no-reply@${process.env.RESEND_DOMAIN ?? 'trapping.cl'}>`,
-        to: email,
-        subject: 'Actualización sobre tu solicitud en Trapping',
-        html: `
-          <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px">
-            <div style="background:#5b21b6;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
-              <h1 style="color:#fff;font-size:24px;margin:0">Trapping</h1>
-            </div>
-            <h2 style="color:#111827;font-size:20px">Hola${nombre ? `, ${nombre}` : ''}</h2>
-            <p style="color:#6b7280;line-height:1.6">
-              Revisamos tu solicitud y por el momento no pudimos aprobar tu cuenta.
-              Puedes actualizar tus documentos e intentarlo nuevamente.
-            </p>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/pending"
-               style="display:inline-block;background:#5b21b6;color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:15px">
-              Ver mi cuenta →
-            </a>
-            <p style="color:#9ca3af;font-size:12px;margin-top:32px">
-              Si tienes dudas, contáctanos por WhatsApp.
-            </p>
-          </div>
-        `,
+        subject: validado === 1
+          ? '¡Tu cuenta fue aprobada! Ya puedes enviar dinero 🎉'
+          : 'Actualización sobre tu solicitud en Trapping',
+        html: validado === 1
+          ? `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px"><div style="background:#7c3aed;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px"><h1 style="color:#fff;font-size:22px;margin:0;font-weight:700">trapping</h1></div><h2 style="color:#111827;font-size:20px">¡Hola${nombre ? `, ${nombre}` : ''}! Tu cuenta fue aprobada 🎉</h2><p style="color:#6b7280;line-height:1.6;margin-top:12px">Ya puedes acceder y enviar dinero al exterior.</p><a href="${process.env.NEXT_PUBLIC_APP_URL}/login" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:15px;margin-top:20px">Ingresar →</a></div>`
+          : `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px"><div style="background:#7c3aed;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px"><h1 style="color:#fff;font-size:22px;margin:0;font-weight:700">trapping</h1></div><h2 style="color:#111827;font-size:20px">Hola${nombre ? `, ${nombre}` : ''}</h2><p style="color:#6b7280;line-height:1.6;margin-top:12px">Revisamos tu solicitud y por ahora no pudimos aprobarla. Puedes actualizar tus documentos.</p><a href="${process.env.NEXT_PUBLIC_APP_URL}/pending" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:15px;margin-top:20px">Ver mi cuenta →</a></div>`,
       }),
     }).catch(() => {})
   }
-
   revalidatePath('/admin/usuarios')
 }
 
-function initials(name?: string | null, lastname?: string | null) {
-  const first = name?.trim()?.[0] ?? 'U'
-  const last = lastname?.trim()?.[0] ?? ''
-  return `${first}${last}`.toUpperCase()
-}
+const VCFG = {
+  0: { label: 'Pendiente',   cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  1: { label: 'Aprobado',    cls: 'bg-green-50 text-green-700 border-green-200' },
+  2: { label: 'Rechazado',   cls: 'bg-red-50 text-red-700 border-red-200' },
+  4: { label: 'En revisión', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+} as const
 
-function kycPercent(user: any) {
-  let completed = 0
-  if (user?.name) completed += 1
-  if (user?.lastname) completed += 1
-  if (user?.rut) completed += 1
-  if (user?.celular) completed += 1
-  if (user?.documento) completed += 1
-  return Math.round((completed / 5) * 100)
-}
-
-function statusBadge(validado: number) {
-  if (validado === 1) {
-    return 'bg-emerald-50 text-emerald-700 border-emerald-100'
-  }
-  if (validado === 2) {
-    return 'bg-rose-50 text-rose-700 border-rose-100'
-  }
-  return 'bg-amber-50 text-amber-700 border-amber-100'
-}
-
-export default async function AdminUsuariosPage() {
+export default async function AdminUsuariosPage({
+  searchParams,
+}: {
+  searchParams: { q?: string; estado?: string; ver?: string }
+}) {
   const supabase = createServiceClient()
 
-  // Obtener profiles + emails de auth.users
-  const { data: usuarios } = await supabase
-    .from('profiles')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
+  const [{ data: usuarios }, { data: authData }] = await Promise.all([
+    supabase.from('profiles').select('*').is('deleted_at', null).order('created_at', { ascending: false }),
+    supabase.auth.admin.listUsers(),
+  ])
 
-  // Obtener emails desde auth.users
-  const { data: authUsers } = await supabase.auth.admin.listUsers()
-  const emailMap = new Map(authUsers?.users?.map((u) => [u.id, u.email]) ?? [])
+  const emailMap = new Map(authData?.users?.map(u => [u.id, u.email ?? '—']) ?? [])
+
+  const q = searchParams.q?.toLowerCase() ?? ''
+  const estado = searchParams.estado ?? 'todos'
+
+  const filtered = (usuarios ?? []).filter(u => {
+    const email = emailMap.get(u.id) ?? ''
+    const matchQ = !q || [u.name, u.lastname, u.rut, email, u.celular].some(v => v?.toLowerCase().includes(q))
+    const matchEstado = estado === 'todos' || String(u.validado) === estado
+    return matchQ && matchEstado
+  })
 
   const stats = {
-    total: usuarios?.length ?? 0,
-    pendientes: usuarios?.filter((u) => u.validado === 0).length ?? 0,
-    aprobados: usuarios?.filter((u) => u.validado === 1).length ?? 0,
-    rechazados: usuarios?.filter((u) => u.validado === 2).length ?? 0,
+    total:      usuarios?.length ?? 0,
+    pendientes: usuarios?.filter(u => u.validado === 0).length ?? 0,
+    aprobados:  usuarios?.filter(u => u.validado === 1).length ?? 0,
+    rechazados: usuarios?.filter(u => u.validado === 2).length ?? 0,
   }
 
+  const verUsuario = searchParams.ver ? usuarios?.find(u => u.id === searchParams.ver) : null
+  const verEmail = verUsuario ? (emailMap.get(verUsuario.id) ?? '—') : ''
+
   return (
-    <div className="mx-auto max-w-[1500px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-2 inline-flex rounded-full border border-violet-100 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
-            Panel KYC
-          </p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Usuarios</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Administra solicitudes KYC, documentos y validación de usuarios.
-          </p>
-        </div>
+    <div className="p-6 space-y-6 max-w-7xl">
 
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
-          Última actualización automática desde Supabase
-        </div>
-      </section>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Usuarios</h1>
+        <p className="text-gray-500 text-sm mt-0.5">Gestiona solicitudes de registro y validación KYC</p>
+      </div>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          {
-            label: 'Total',
-            value: stats.total,
-            description: 'Usuarios registrados',
-            color: 'text-slate-900',
-            icon: '👥',
-            bg: 'bg-violet-50',
-          },
-          {
-            label: 'En revisión',
-            value: stats.pendientes,
-            description: 'Pendientes de aprobación',
-            color: 'text-orange-500',
-            icon: '⏱',
-            bg: 'bg-orange-50',
-          },
-          {
-            label: 'Aprobados',
-            value: stats.aprobados,
-            description: 'Usuarios verificados',
-            color: 'text-emerald-600',
-            icon: '✓',
-            bg: 'bg-emerald-50',
-          },
-          {
-            label: 'Rechazados',
-            value: stats.rechazados,
-            description: 'Solicitudes rechazadas',
-            color: 'text-rose-600',
-            icon: '×',
-            bg: 'bg-rose-50',
-          },
-        ].map((item) => (
-          <article
-            key={item.label}
-            className="flex min-h-[138px] items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-          >
+          { label: 'Total',      value: stats.total,      icon: Users,        bg: 'bg-gray-100',   text: 'text-gray-700' },
+          { label: 'Pendientes', value: stats.pendientes, icon: Clock,        bg: 'bg-amber-50',   text: 'text-amber-700' },
+          { label: 'Aprobados',  value: stats.aprobados,  icon: CheckCircle2, bg: 'bg-green-50',   text: 'text-green-700' },
+          { label: 'Rechazados', value: stats.rechazados, icon: XCircle,      bg: 'bg-red-50',     text: 'text-red-700' },
+        ].map(({ label, value, icon: Icon, bg, text }) => (
+          <div key={label} className="card p-5 flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
+              <Icon size={18} className={text} />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-slate-500">{item.label}</p>
-              <p className={`mt-4 text-4xl font-extrabold ${item.color}`}>{item.value}</p>
-              <p className="mt-2 text-sm text-slate-500">{item.description}</p>
+              <p className={`text-2xl font-bold ${text}`}>{value}</p>
+              <p className="text-xs text-gray-400">{label}</p>
             </div>
-            <div className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl ${item.bg}`}>
-              {item.icon}
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 lg:grid-cols-[1fr_230px_150px_145px]">
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">⌕</span>
-            <input
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-              placeholder="Buscar usuario por nombre, email, RUT o celular..."
-            />
           </div>
+        ))}
+      </div>
 
-          <select className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100">
-            <option>Todos los estados</option>
-            <option>Pendientes</option>
-            <option>Aprobados</option>
-            <option>Rechazados</option>
+      {/* Filtros */}
+      <div className="card p-4">
+        <form className="flex flex-wrap gap-3">
+          <input name="q" defaultValue={q}
+            placeholder="Buscar por nombre, email o RUT..."
+            className="input-field flex-1 min-w-48 h-10 text-sm" />
+          <select name="estado" defaultValue={estado}
+            className="input-field w-44 h-10 text-sm">
+            <option value="todos">Todos los estados</option>
+            <option value="0">Pendientes</option>
+            <option value="1">Aprobados</option>
+            <option value="2">Rechazados</option>
           </select>
+          <button type="submit" className="btn-primary h-10 px-5 text-sm">Buscar</button>
+          {(q || estado !== 'todos') && (
+            <a href="/admin/usuarios" className="btn-secondary h-10 px-4 text-sm">Limpiar</a>
+          )}
+        </form>
+      </div>
 
-          <button
-            type="button"
-            className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-          >
-            Más filtros
-          </button>
-
-          <button
-            type="button"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-violet-300 bg-white px-4 text-sm font-extrabold text-violet-700 transition hover:bg-violet-50"
-          >
-            ↓ Exportar
-          </button>
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Tabla */}
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-sm">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-white text-left text-slate-900">
-                <th className="px-6 py-5 font-extrabold">Usuario</th>
-                <th className="px-6 py-5 font-extrabold">Contacto</th>
-                <th className="px-6 py-5 font-extrabold">Registrado</th>
-                <th className="px-6 py-5 font-extrabold">Estado KYC</th>
-                <th className="px-6 py-5 font-extrabold">Documentos</th>
-                <th className="px-6 py-5 text-center font-extrabold">% Perfil</th>
-                <th className="px-6 py-5 font-extrabold">Acciones</th>
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                {['Usuario', 'Email', 'RUT', 'Registro', 'Documentos', 'Estado', 'Acciones'].map(h => (
+                  <th key={h} className="text-left text-xs font-semibold text-gray-400 px-4 py-3.5">{h}</th>
+                ))}
               </tr>
             </thead>
-
-            <tbody>
-              {usuarios?.map((u) => {
-                const { label } = getValidadoLabel(u.validado)
+            <tbody className="divide-y divide-gray-50">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center text-gray-400 text-sm">
+                    No se encontraron usuarios
+                  </td>
+                </tr>
+              ) : filtered.map(u => {
                 const email = emailMap.get(u.id) ?? '—'
-                const percent = kycPercent(u)
-                const approved = u.validado === 1
-                const rejected = u.validado === 2
+                const cfg = VCFG[u.validado as keyof typeof VCFG] ?? VCFG[0]
+                const initials = `${u.name?.[0] ?? ''}${u.lastname?.[0] ?? ''}`.toUpperCase() || '?'
+                const tieneDocs = !!u.documento
 
                 return (
-                  <tr key={u.id} className="border-b border-slate-100 align-middle last:border-b-0 hover:bg-slate-50/60">
-                    <td className="px-6 py-7">
-                      <div className="flex items-center gap-4">
-                        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-extrabold text-violet-700">
-                          {initials(u.name, u.lastname)}
-                          <span
-                            className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${
-                              approved ? 'bg-emerald-500' : rejected ? 'bg-rose-500' : 'bg-orange-500'
-                            }`}
-                          />
+                  <tr key={u.id} className="hover:bg-brand-50/30 transition-colors">
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-brand-700 text-xs font-bold">{initials}</span>
                         </div>
-
                         <div className="min-w-0">
-                          <p className="font-extrabold text-slate-900">{u.name} {u.lastname}</p>
-                          <p className="mt-1 max-w-[260px] truncate text-slate-500">{email}</p>
-                          <p className="mt-2 inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
-                            ID: {u.rut ?? 'Sin RUT'}
+                          <p className="font-medium text-gray-900 truncate max-w-32">
+                            {[u.name, u.lastname].filter(Boolean).join(' ') || '—'}
                           </p>
+                          <p className="text-xs text-gray-400">{u.role}</p>
                         </div>
                       </div>
                     </td>
-
-                    <td className="px-6 py-7 text-slate-700">
-                      <p>{u.celular ?? '—'}</p>
-                      <p className="mt-1 text-xs text-slate-400">{u.role ?? 'User'}</p>
+                    <td className="px-4 py-3.5">
+                      <p className="text-xs text-gray-600 max-w-44 truncate">{email}</p>
                     </td>
-
-                    <td className="px-6 py-7 text-slate-700">
-                      <p>{u.created_at ? format(new Date(u.created_at), 'd MMM yyyy', { locale: es }) : '—'}</p>
-                      <p className="mt-1 text-xs text-slate-400">Registro</p>
+                    <td className="px-4 py-3.5">
+                      {u.rut
+                        ? <span className="font-mono text-xs text-gray-700">{u.rut}</span>
+                        : <span className="text-xs text-gray-300">—</span>
+                      }
                     </td>
-
-                    <td className="px-6 py-7">
-                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${statusBadge(u.validado)}`}>
-                        {label}
-                      </span>
+                    <td className="px-4 py-3.5 text-xs text-gray-500 whitespace-nowrap">
+                      {format(new Date(u.created_at), "d MMM yyyy", { locale: es })}
                     </td>
-
-                    <td className="px-6 py-7">
-                      {u.documento ? (
-                        <div className="flex flex-col gap-2">
-                          <span className="inline-flex w-fit items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                            ✓ Documento cargado
-                          </span>
-                          <a
-                            href={u.documento}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs font-bold text-violet-700 hover:text-violet-900"
-                          >
-                            Ver documento
+                    <td className="px-4 py-3.5">
+                      {tieneDocs ? (
+                        <div className="flex items-center gap-1.5">
+                          <FileCheck size={14} className="text-green-600 flex-shrink-0" />
+                          <a href={`/admin/usuarios?ver=${u.id}`}
+                            className="text-xs text-brand-600 hover:text-brand-700 font-medium">
+                            Ver docs
                           </a>
                         </div>
                       ) : (
-                        <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
-                          Sin documentos
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <FileX size={14} className="text-gray-300 flex-shrink-0" />
+                          <span className="text-xs text-gray-300">Sin docs</span>
+                        </div>
                       )}
                     </td>
-
-                    <td className="px-6 py-7">
-                      <div className="flex justify-center">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-violet-600 bg-white text-xs font-extrabold text-slate-900">
-                          {percent}%
-                        </div>
-                      </div>
+                    <td className="px-4 py-3.5">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>
+                        {cfg.label}
+                      </span>
                     </td>
-
-                    <td className="px-6 py-7">
-                      {u.validado === 0 && u.role !== 'Admin' && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <form action={cambiarValidado.bind(null, u.id, 1, email, u.name ?? '')}>
-                            <button className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-700 transition hover:bg-emerald-100">
-                              Aprobar
-                            </button>
-                          </form>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-1.5">
+                        {u.validado === 0 && u.role !== 'Admin' && (
+                          <>
+                            <form action={cambiarValidado.bind(null, u.id, 1, email, u.name ?? '')}>
+                              <button className="text-xs px-2.5 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 font-medium transition-colors">
+                                Aprobar
+                              </button>
+                            </form>
+                            <form action={cambiarValidado.bind(null, u.id, 2, email, u.name ?? '')}>
+                              <button className="text-xs px-2.5 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 font-medium transition-colors">
+                                Rechazar
+                              </button>
+                            </form>
+                          </>
+                        )}
+                        {u.validado === 1 && u.role !== 'Admin' && (
                           <form action={cambiarValidado.bind(null, u.id, 2, email, u.name ?? '')}>
-                            <button className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-extrabold text-rose-700 transition hover:bg-rose-100">
-                              Rechazar
+                            <button className="text-xs px-2.5 py-1.5 bg-gray-50 text-gray-500 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-medium transition-colors">
+                              Suspender
                             </button>
                           </form>
-                          <a
-                            href={`/admin/usuarios?user=${u.id}`}
-                            className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-extrabold text-violet-700 transition hover:bg-violet-100"
-                          >
-                            Ver / Editar
-                          </a>
-                        </div>
-                      )}
-
-                      {u.validado === 1 && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Activo</span>
-                          <a
-                            href={`/admin/usuarios?user=${u.id}`}
-                            className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-extrabold text-violet-700 transition hover:bg-violet-100"
-                          >
-                            Ver / Editar
-                          </a>
-                        </div>
-                      )}
-
-                      {u.validado === 2 && (
-                        <div className="flex flex-wrap items-center gap-2">
+                        )}
+                        {u.validado === 2 && (
                           <form action={cambiarValidado.bind(null, u.id, 0, email, u.name ?? '')}>
-                            <button className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-200">
+                            <button className="text-xs px-2.5 py-1.5 bg-gray-50 text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 font-medium transition-colors">
                               Reactivar
                             </button>
                           </form>
-                          <a
-                            href={`/admin/usuarios?user=${u.id}`}
-                            className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-extrabold text-violet-700 transition hover:bg-violet-100"
-                          >
-                            Ver / Editar
-                          </a>
-                        </div>
-                      )}
+                        )}
+                        <a href={`/admin/usuarios?ver=${u.id}`}
+                          className="text-xs px-2.5 py-1.5 bg-brand-50 text-brand-700 border border-brand-200 rounded-lg hover:bg-brand-100 font-medium transition-colors flex items-center gap-1">
+                          Ver <ChevronRight size={11} />
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -390,16 +239,82 @@ export default async function AdminUsuariosPage() {
             </tbody>
           </table>
         </div>
-
-        <div className="flex flex-col gap-4 border-t border-slate-100 px-6 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>Mostrando 1 a {usuarios?.length ?? 0} de {usuarios?.length ?? 0} usuarios</p>
-          <div className="flex items-center gap-2">
-            <button className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">‹</button>
-            <button className="h-10 w-10 rounded-lg bg-violet-600 font-extrabold text-white">1</button>
-            <button className="h-10 w-10 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">›</button>
-          </div>
+        <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/40">
+          <p className="text-xs text-gray-400">
+            {filtered.length} de {usuarios?.length ?? 0} usuarios
+          </p>
         </div>
-      </section>
+      </div>
+
+      {/* Detalle usuario */}
+      {verUsuario && (
+        <div className="card p-6">
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-brand-700 font-bold text-lg">
+                  {`${verUsuario.name?.[0] ?? ''}${verUsuario.lastname?.[0] ?? ''}`.toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900 text-lg">{verUsuario.name} {verUsuario.lastname}</h2>
+                <p className="text-sm text-gray-500">{verEmail}</p>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${VCFG[verUsuario.validado as keyof typeof VCFG]?.cls ?? ''}`}>
+                  {VCFG[verUsuario.validado as keyof typeof VCFG]?.label}
+                </span>
+              </div>
+            </div>
+            <a href="/admin/usuarios" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              ✕ Cerrar
+            </a>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            {[
+              { label: 'RUT',      value: verUsuario.rut || 'No ingresado' },
+              { label: 'Celular',  value: verUsuario.celular || '—' },
+              { label: 'Registro', value: format(new Date(verUsuario.created_at), "d MMM yyyy", { locale: es }) },
+              { label: 'Rol',      value: verUsuario.role },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-brand-50 rounded-xl p-3">
+                <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+                <p className="text-sm font-medium text-gray-900">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Documentos KYC</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+            {['documento', 'foto'].map(field => {
+              const val = (verUsuario as any)[field]
+              const label = field === 'documento' ? 'Documento CI' : 'Selfie'
+              return (
+                <div key={field} className={`rounded-xl p-4 border ${val ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                  <p className={`text-xs font-semibold mb-1.5 flex items-center gap-1 ${val ? 'text-green-700' : 'text-gray-400'}`}>
+                    {val ? <FileCheck size={13} /> : <FileX size={13} />}
+                    {label}
+                  </p>
+                  {val
+                    ? <p className="text-xs font-mono text-green-600 truncate">{val}</p>
+                    : <p className="text-xs text-gray-400">Sin cargar</p>
+                  }
+                </div>
+              )
+            })}
+          </div>
+
+          {verUsuario.validado === 0 && verUsuario.role !== 'Admin' && (
+            <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <form action={cambiarValidado.bind(null, verUsuario.id, 1, verEmail, verUsuario.name ?? '')}>
+                <button className="btn-primary text-sm px-6">✓ Aprobar cuenta</button>
+              </form>
+              <form action={cambiarValidado.bind(null, verUsuario.id, 2, verEmail, verUsuario.name ?? '')}>
+                <button className="btn-danger text-sm px-6">✕ Rechazar</button>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
