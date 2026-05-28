@@ -58,12 +58,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 function IconInput({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="relative">
-      <div className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-400 flex items-center">{icon}</div>
-      {children}
-    </div>
-  )
+  return <>{children}</>
 }
 
 function SecuritySidebar() {
@@ -282,14 +277,14 @@ export default function RegisterPage() {
                   <div>
                     <FieldLabel>Nombres *</FieldLabel>
                     <IconInput icon={<User size={16} />}>
-                      <input className={`${inputBase} pl-10`} placeholder="Ingresa tu nombre(s)"
+                      <input className={`${inputBase}`} placeholder="Ingresa tu nombre(s)"
                         value={form.firstName} onChange={e => update('firstName', e.target.value)} />
                     </IconInput>
                   </div>
                   <div>
                     <FieldLabel>Apellidos *</FieldLabel>
                     <IconInput icon={<User size={16} />}>
-                      <input className={`${inputBase} pl-10`} placeholder="Ingresa tus apellidos"
+                      <input className={`${inputBase}`} placeholder="Ingresa tus apellidos"
                         value={form.lastName} onChange={e => update('lastName', e.target.value)} />
                     </IconInput>
                   </div>
@@ -297,7 +292,7 @@ export default function RegisterPage() {
                     <FieldLabel>Tipo de documento *</FieldLabel>
                     <div className="relative">
                       <CreditCard className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      <select className={`${inputBase} appearance-none pl-10`}
+                      <select className={`${inputBase} appearance-none`}
                         value={form.documentType} onChange={e => update('documentType', e.target.value)}>
                         <option value="">Selecciona tu documento</option>
                         {tiposDoc.map(t => <option key={t.id} value={String(t.id)}>{t.nombre_documento}</option>)}
@@ -308,7 +303,7 @@ export default function RegisterPage() {
                   <div>
                     <FieldLabel>Número de documento *</FieldLabel>
                     <IconInput icon={<CreditCard size={16} />}>
-                      <input className={`${inputBase} pl-10`} placeholder="Ej: 12.345.678-9"
+                      <input className={`${inputBase}`} placeholder="Ej: 12.345.678-9"
                         value={form.documentNumber} onChange={e => update('documentNumber', e.target.value)} />
                     </IconInput>
                   </div>
@@ -327,7 +322,7 @@ export default function RegisterPage() {
                 <div className="mt-5">
                   <FieldLabel>Email *</FieldLabel>
                   <IconInput icon={<Mail size={16} />}>
-                    <input type="email" className={`${inputBase} pl-10`} placeholder="ejemplo@correo.com"
+                    <input type="email" className={`${inputBase}`} placeholder="ejemplo@correo.com"
                       value={form.email} onChange={e => update('email', e.target.value)} />
                   </IconInput>
                 </div>
@@ -336,7 +331,7 @@ export default function RegisterPage() {
                   <div>
                     <FieldLabel>Contraseña *</FieldLabel>
                     <IconInput icon={<Lock size={16} />}>
-                      <input type={showPassword ? 'text' : 'password'} className={`${inputBase} pl-11 pr-12`}
+                      <input type={showPassword ? 'text' : 'password'} className={`${inputBase} pr-12`}
                         placeholder="Mínimo 8 caracteres" value={form.password}
                         onChange={e => update('password', e.target.value)} />
                       <button type="button" onClick={() => setShowPassword(p => !p)}
@@ -348,7 +343,7 @@ export default function RegisterPage() {
                   <div>
                     <FieldLabel>Confirmar contraseña *</FieldLabel>
                     <IconInput icon={<Lock size={16} />}>
-                      <input type={showConfirmPassword ? 'text' : 'password'} className={`${inputBase} pl-11 pr-12`}
+                      <input type={showConfirmPassword ? 'text' : 'password'} className={`${inputBase} pr-12`}
                         placeholder="Repite tu contraseña" value={form.confirmPassword}
                         onChange={e => update('confirmPassword', e.target.value)} />
                       <button type="button" onClick={() => setShowConfirmPassword(p => !p)}
