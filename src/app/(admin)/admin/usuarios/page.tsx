@@ -157,7 +157,7 @@ export default async function AdminUsuariosPage({
                           <span className="text-brand-700 text-xs font-bold">{initials}</span>
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate max-w-32">
+                          <p className="font-medium text-gray-900">
                             {[u.name, u.lastname].filter(Boolean).join(' ') || '—'}
                           </p>
                           <p className="text-xs text-gray-400">{u.role}</p>
@@ -165,7 +165,7 @@ export default async function AdminUsuariosPage({
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <p className="text-xs text-gray-600 max-w-44 truncate">{email}</p>
+                      <p className="text-xs text-gray-600 truncate">{email}</p>
                     </td>
                     <td className="px-4 py-3.5">
                       {u.rut
