@@ -1,6 +1,7 @@
 // src/app/page.tsx — Landing page pública con animaciones Motion
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
 import LandingHero from '@/components/landing/LandingHero'
 import LandingCalculator from '@/components/landing/LandingCalculator'
 import LandingStats from '@/components/landing/LandingStats'
@@ -13,7 +14,18 @@ export const metadata: Metadata = {
   description: 'Plataforma chilena de envío de remesas a Venezuela, Colombia, España y más. Rápido, seguro y con las mejores tasas.',
 }
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Cargar tasas desde server (no necesita auth del usuario)
+  const supabase = createClient()
+  const { data: tasasData } = await supabase
+    .from('tasas')
+    .select('id, moneda_origen, moneda_destino, valor, monto_minimo, monto_maximo')
+    .eq('activo', true)
+    .eq('moneda_origen', 'CLP')
+    .is('deleted_at', null)
+
+  const tasas = (tasasData ?? []) as { id: number; moneda_origen: string; moneda_destino: string; valor: number; monto_minimo: number; monto_maximo: number }[]
+
   return (
     <div className="min-h-screen bg-white">
       {/* NAV */}
@@ -62,7 +74,7 @@ export default function LandingPage() {
                 <span>Comisión transparente</span>
               </div>
             </div>
-            <LandingCalculator />
+            <LandingCalculator tasas={tasas} />
           </div>
         </div>
       </section>

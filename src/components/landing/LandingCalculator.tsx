@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { formatMoneda, calcularComision } from '@/utils/format'
-import { BANDERAS, NOMBRES_MONEDA, PAISES_DESTINO } from '@/lib/constants'
-import { ArrowDown, RefreshCw } from 'lucide-react'
+import { BANDERAS, PAISES_DESTINO } from '@/lib/constants'
+import { ArrowDown } from 'lucide-react'
 
 type Tasa = {
   id: number
@@ -14,29 +13,18 @@ type Tasa = {
   valor: number
   monto_minimo: number
   monto_maximo: number
-  impuesto_moneda_origen: number
 }
 
-export default function LandingCalculator() {
-  const [tasas, setTasas] = useState<Tasa[]>([])
-  const [loading, setLoading] = useState(true)
-  const [monedaDestino, setMonedaDestino] = useState('VES')
-  const [montoInput, setMontoInput] = useState('100000')
+interface Props {
+  tasas?: Tasa[]
+}
 
-  // Cargar tasas activas
-  useEffect(() => {
-    const supabase = createClient()
-    supabase
-      .from('tasas')
-      .select('id, moneda_origen, moneda_destino, valor, monto_minimo, monto_maximo, impuesto_moneda_origen')
-      .eq('activo', true)
-      .eq('moneda_origen', 'CLP')
-      .is('deleted_at', null)
-      .then(({ data }) => {
-        setTasas(data ?? [])
-        setLoading(false)
-      })
-  }, [])
+export default function LandingCalculator({ tasas = [] }: Props) {
+  const [monedaDestino, setMonedaDestino] = useState(() => {
+    // Default a la primera moneda destino disponible o VES
+    return tasas.length > 0 ? tasas[0].moneda_destino : 'VES'
+  })
+  const [montoInput, setMontoInput] = useState('100000')
 
   const monedasDestino = useMemo(() => {
     return Array.from(new Set(tasas.map(t => t.moneda_destino)))
@@ -55,15 +43,16 @@ export default function LandingCalculator() {
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   }
 
-  if (loading) {
+  // Si no hay tasas, mostrar versión estática
+  if (tasas.length === 0) {
     return (
       <div className="card p-6 shadow-lg max-w-sm mx-auto lg:mx-0 w-full">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 w-32 bg-gray-200 rounded" />
-          <div className="h-14 bg-gray-100 rounded-xl" />
-          <div className="h-8 w-8 bg-gray-200 rounded-full mx-auto" />
-          <div className="h-14 bg-brand-50 rounded-xl" />
-          <div className="h-12 bg-brand-100 rounded-xl" />
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+          Simulador de envío
+        </p>
+        <div className="text-center py-8">
+          <p className="text-sm text-gray-500 mb-4">Regístrate para ver tasas en tiempo real</p>
+          <Link href="/register" className="btn-primary text-sm">Crear cuenta gratis</Link>
         </div>
       </div>
     )
@@ -118,7 +107,7 @@ export default function LandingCalculator() {
               <p className="text-2xl font-bold text-brand-700">
                 {montoNum > 0 && tasaActual
                   ? formatMoneda(montoDestino, monedaDestino)
-                  : `${NOMBRES_MONEDA[monedaDestino] ?? monedaDestino}`
+                  : '—'
                 }
               </p>
               <p className="text-xs text-brand-400">{monedaDestino}</p>
@@ -151,12 +140,6 @@ export default function LandingCalculator() {
             <span>Tasa: 1 CLP = {tasaActual.valor.toFixed(4)} {monedaDestino}</span>
             <span>Comisión: {formatMoneda(comision, 'CLP')}</span>
           </div>
-        )}
-
-        {!tasaActual && !loading && (
-          <p className="text-xs text-gray-400 text-center py-2">
-            No hay tasa disponible para este destino
-          </p>
         )}
       </div>
 

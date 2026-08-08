@@ -5,15 +5,17 @@ import Link from 'next/link'
 import { ArrowRight, Shield, Zap, Globe } from 'lucide-react'
 import TypewriterText from './TypewriterText'
 
-const ROTATING_WORDS = [
-  'VENEZUELA',
-  'COLOMBIA',
-  'ESPAÑA',
+const ROTATING_PHRASES = [
+  'rápido y seguro',
+  'sin comisiones ocultas',
+  'a tu familia',
+  'con las mejores tasas',
+  'desde tu celular',
 ]
 
 export default function LandingHero() {
   return (
-    <section className="relative pt-32 pb-24 px-4 sm:px-6 overflow-hidden min-h-[85vh] flex items-center">
+    <section className="relative pt-32 pb-20 px-4 sm:px-6 overflow-hidden min-h-[85vh] flex items-center">
       {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white" />
 
@@ -49,17 +51,17 @@ export default function LandingHero() {
           className="mb-6"
         >
           {/* Línea 1: texto estático */}
-          <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
-            TU CUENTA PARA ENVIAR A
-          </p>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight">
+            Envía dinero al exterior
+          </h1>
 
-          {/* Línea 2: palabra que rota con typewriter */}
-          <div className="h-[1.3em] mt-2 text-5xl sm:text-6xl lg:text-7xl font-black text-brand-600 leading-none tracking-tight">
+          {/* Línea 2: frase que rota con typewriter */}
+          <div className="h-[1.4em] mt-3 text-4xl sm:text-5xl lg:text-6xl font-extrabold text-brand-600 leading-tight tracking-tight">
             <TypewriterText
-              words={ROTATING_WORDS}
-              typeSpeed={100}
-              deleteSpeed={60}
-              pauseTime={2500}
+              words={ROTATING_PHRASES}
+              typeSpeed={80}
+              deleteSpeed={40}
+              pauseTime={2000}
             />
           </div>
         </motion.div>
@@ -69,17 +71,40 @@ export default function LandingHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="text-base sm:text-lg text-gray-500 max-w-xl mx-auto mb-10 leading-relaxed"
+          className="text-base sm:text-lg text-gray-500 max-w-xl mx-auto mb-8 leading-relaxed"
         >
-          Mueve tu dinero por el mundo sin comisiones ocultas ni complicaciones.
-          Rápido, seguro y cercano a tu familia.
+          Conectamos a la comunidad inmigrante en Chile con sus seres queridos.
+          Transferencias simples, seguras y con soporte humano.
         </motion.p>
+
+        {/* Países donde operamos */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+          className="flex items-center justify-center gap-3 mb-10 flex-wrap"
+        >
+          <span className="text-xs text-gray-400 font-medium">Destinos:</span>
+          {[
+            { flag: '🇻🇪', name: 'Venezuela' },
+            { flag: '🇨🇴', name: 'Colombia' },
+            { flag: '🇪🇸', name: 'España' },
+          ].map(({ flag, name }) => (
+            <span
+              key={name}
+              className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full shadow-sm"
+            >
+              <span className="text-sm">{flag}</span>
+              {name}
+            </span>
+          ))}
+        </motion.div>
 
         {/* CTAs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.0 }}
+          transition={{ duration: 0.5, delay: 1.1 }}
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
           <Link
@@ -98,13 +123,13 @@ export default function LandingHero() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 0.8 }}
-          className="mt-14 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400"
+          transition={{ delay: 1.5, duration: 0.8 }}
+          className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400"
         >
           {[
             { icon: Shield, text: '100% seguro' },
             { icon: Zap, text: 'Acreditación < 24h' },
-            { icon: Globe, text: '3 países destino' },
+            { icon: Globe, text: 'Sin costo de registro' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-1.5">
               <Icon size={14} className="text-brand-400" />
