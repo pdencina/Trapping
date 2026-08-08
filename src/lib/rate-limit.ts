@@ -21,14 +21,14 @@ function cleanup(windowMs: number) {
   if (now - lastCleanup < CLEANUP_INTERVAL) return
   lastCleanup = now
 
-  for (const [key, entry] of store) {
+  store.forEach((entry, key) => {
     const validTimestamps = entry.timestamps.filter(t => now - t < windowMs)
     if (validTimestamps.length === 0) {
       store.delete(key)
     } else {
       entry.timestamps = validTimestamps
     }
-  }
+  })
 }
 
 export interface RateLimitConfig {
