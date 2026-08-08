@@ -1,6 +1,6 @@
 'use client'
 
-import { AnimatedSection, AnimatedCard } from './AnimatedSection'
+import { AnimatedSection } from './AnimatedSection'
 import { motion } from 'motion/react'
 import { useRef } from 'react'
 import { useInView } from 'motion/react'

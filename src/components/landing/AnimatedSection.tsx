@@ -11,7 +11,7 @@ interface Props {
   direction?: 'up' | 'down' | 'left' | 'right'
 }
 
-export default function AnimatedSection({ children, className = '', delay = 0, direction = 'up' }: Props) {
+export function AnimatedSection({ children, className = '', delay = 0, direction = 'up' }: Props) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-80px' })
 
