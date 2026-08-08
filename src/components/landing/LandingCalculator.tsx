@@ -39,7 +39,7 @@ export default function LandingCalculator() {
   }, [])
 
   const monedasDestino = useMemo(() => {
-    return [...new Set(tasas.map(t => t.moneda_destino))]
+    return Array.from(new Set(tasas.map(t => t.moneda_destino)))
   }, [tasas])
 
   const tasaActual = useMemo(() => {

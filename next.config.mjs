@@ -28,13 +28,6 @@ export default withSentryConfig(nextConfig, {
   // Ocultar sourcemaps de la build final (seguridad)
   hideSourceMaps: true,
 
-  // Deshabilitar el widget de feedback (no necesario para esta app)
-  disableLogger: true,
-
   // Tunelizar eventos via API route para evitar ad-blockers
   tunnelRoute: '/monitoring',
-
-  // Instrumentar automáticamente server actions
-  autoInstrumentServerFunctions: true,
-  autoInstrumentMiddleware: true,
 })

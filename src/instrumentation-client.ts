@@ -1,4 +1,4 @@
-// sentry.client.config.ts
+// src/instrumentation-client.ts
 // Configuración de Sentry para el cliente (browser)
 import * as Sentry from '@sentry/nextjs'
 

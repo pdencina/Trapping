@@ -22,7 +22,7 @@ export default function PickupSelector({ puntos, selectedId, onSelect, monedaDes
 
   // Ciudades disponibles
   const ciudades = useMemo(() => {
-    return [...new Set(puntosDisponibles.map(p => p.ciudad))].sort()
+    return Array.from(new Set(puntosDisponibles.map(p => p.ciudad))).sort()
   }, [puntosDisponibles])
 
   // Puntos filtrados por ciudad

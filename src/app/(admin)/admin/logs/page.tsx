@@ -48,7 +48,7 @@ export default async function AdminLogsPage() {
 
   // Obtener nombres de admins
   const service = createServiceClient()
-  const adminIds = [...new Set(logs.map((l: any) => l.admin_id))]
+  const adminIds = Array.from(new Set(logs.map((l: any) => l.admin_id)))
   const { data: admins } = await service
     .from('profiles')
     .select('id, name, lastname')
