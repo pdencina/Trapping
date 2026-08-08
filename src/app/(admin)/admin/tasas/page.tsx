@@ -50,7 +50,7 @@ export default async function AdminTasasPage({
     .is('deleted_at', null)
     .order('moneda_origen')
 
-  const MONEDAS = ['CLP', 'USD', 'ARS', 'COP', 'VES', 'PAB', 'PEN']
+  const MONEDAS = ['CLP', 'USD', 'ARS', 'COP', 'VES', 'PAB', 'PEN', 'EUR']
 
   return (
     <div className="space-y-6">

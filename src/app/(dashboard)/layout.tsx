@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import MobileNav from '@/components/layout/MobileNav'
 import Sidebar from '@/components/layout/Sidebar'
+import OnboardingModal from '@/components/shared/OnboardingModal'
 import type { Profile } from '@/types/database'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </main>
         <MobileNav />
       </div>
+
+      {/* Onboarding primer login */}
+      <OnboardingModal />
     </div>
   )
 }

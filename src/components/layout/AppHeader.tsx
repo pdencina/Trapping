@@ -1,5 +1,6 @@
 // src/components/layout/AppHeader.tsx
 import HamburgerMenu from './HamburgerMenu'
+import NotificationBell from '@/components/shared/NotificationBell'
 import type { Profile } from '@/types/database'
 
 interface Props {
@@ -20,7 +21,10 @@ export default function AppHeader({ profile, email, title, subtitle, children }:
       <div className="relative">
         <div className="flex items-center justify-between mb-4">
           <span className="text-white font-bold text-xl tracking-tight">trapping</span>
-          <HamburgerMenu profile={profile} email={email} />
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <HamburgerMenu profile={profile} email={email} />
+          </div>
         </div>
 
         {title && (

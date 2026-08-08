@@ -1,6 +1,9 @@
 // src/app/api/register/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { validarRut } from '@/utils/format'
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { aplicarCodigoReferido } from '@/lib/actions/referrals'
 import { z } from 'zod'
 
 const Schema = z.object({
@@ -11,15 +14,30 @@ const Schema = z.object({
   rut: z.string().min(1),
   celular: z.string().min(1),
   tipo_documento_id: z.coerce.number().min(1),
+  referral_code: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 3 registros por IP cada 5 minutos
+  const rateLimited = checkRateLimit(req, RATE_LIMITS.register)
+  if (rateLimited) return rateLimited
+
   const body = await req.json()
   const parsed = Schema.safeParse(body)
 
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'Datos inválidos: ' + parsed.error.errors[0].message },
+      { status: 400 }
+    )
+  }
+
+  // Validar RUT si el tipo de documento es RUT chileno (tipo_documento_id = 1 generalmente)
+  // Se valida para cualquier documento que parezca RUT (contiene guión y dígito verificador)
+  const rutLike = /^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/.test(parsed.data.rut.trim())
+  if (rutLike && !validarRut(parsed.data.rut)) {
+    return NextResponse.json(
+      { error: 'El RUT ingresado no es válido. Verifica el dígito verificador.' },
       { status: 400 }
     )
   }
@@ -66,6 +84,11 @@ export async function POST(req: NextRequest) {
     validado: 0,
     role: 'User',
   }).eq('id', userId)
+
+  // Aplicar código de referido si fue proporcionado
+  if (parsed.data.referral_code) {
+    aplicarCodigoReferido(userId, parsed.data.referral_code).catch(() => {})
+  }
 
   return NextResponse.json({
     success: true,

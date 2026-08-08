@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono'
 import { Toaster } from 'sonner'
 import './globals.css'
 import './critical.css'
+import WhatsAppButton from '@/components/shared/WhatsAppButton'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-brand-50 text-gray-900 antialiased font-sans">
         {children}
+        <WhatsAppButton />
         <Toaster richColors position="top-center" />
       </body>
     </html>

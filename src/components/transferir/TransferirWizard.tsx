@@ -6,9 +6,18 @@ import { useWizard } from '@/hooks/useWizard'
 import { crearOperacionAction } from '@/lib/actions/operaciones'
 import { formatMoneda, formatMonto } from '@/utils/format'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle2, ChevronRight, Upload, Star } from 'lucide-react'
+import PickupSelector from '@/components/transferir/PickupSelector'
+import { CheckCircle2, ChevronRight, Upload, Star, MapPin } from 'lucide-react'
 import { cn } from '@/utils/format'
-import type { Moneda, Tasa, Billetera, OperacionProposito } from '@/types/database'
+import type { Moneda, Tasa, Billetera, OperacionProposito, PuntoRetiro } from '@/types/database'
+
+interface RepetirData {
+  monedaOrigen?: string
+  monedaDestino?: string
+  monto?: number
+  cuentaDestinatarioId?: number
+  propositoId?: number
+}
 
 interface Props {
   monedas: (Moneda & { paises: { nombre_pais: string } | null })[]
@@ -17,16 +26,56 @@ interface Props {
   cuentasApp: any[]
   billeteras: Billetera[]
   propositos: OperacionProposito[]
+  puntosRetiro?: (PuntoRetiro & { paises?: { nombre_pais: string } })[]
+  repetirData?: RepetirData
+  descuentoReferido?: number
 }
 
 const STEPS = ['Monto', 'Destino', 'Pago', 'Confirmación']
 
-export default function TransferirWizard({ monedas, tasas, destinatarios, cuentasApp, billeteras, propositos }: Props) {
+export default function TransferirWizard({ monedas, tasas, destinatarios, cuentasApp, billeteras, propositos, puntosRetiro = [], repetirData, descuentoReferido = 0 }: Props) {
   const { state, setStep, setMonedaOrigen, setMonedaDestino, setMonto, aplicarDescuento, setDestinatario, setPago, reset } = useWizard()
   const [loading, setLoading] = useState(false)
   const [codigoInput, setCodigoInput] = useState('')
   const [boucherFile, setBoucherFile] = useState<File | null>(null)
   const [codigoOperacion, setCodigoOperacion] = useState<string | null>(null)
+  const [initialized, setInitialized] = useState(false)
+  const [metodoEntrega, setMetodoEntrega] = useState<'banco' | 'pickup'>('banco')
+  const [puntoRetiroId, setPuntoRetiroId] = useState<number | null>(null)
+
+  // Pre-cargar datos si viene de "Repetir operación"
+  if (repetirData && !initialized) {
+    setInitialized(true)
+    if (repetirData.monedaOrigen) setMonedaOrigen(repetirData.monedaOrigen)
+    if (repetirData.monedaDestino) setMonedaDestino(repetirData.monedaDestino)
+
+    // Pre-seleccionar monto y tasa
+    if (repetirData.monto && repetirData.monedaOrigen && repetirData.monedaDestino) {
+      const tasa = tasas.find(t =>
+        t.moneda_origen === repetirData.monedaOrigen &&
+        t.moneda_destino === repetirData.monedaDestino &&
+        t.activo
+      )
+      if (tasa) {
+        setTimeout(() => setMonto(repetirData.monto!, { id: tasa.id, valor: tasa.valor }), 0)
+      }
+    }
+
+    // Pre-seleccionar destinatario
+    if (repetirData.cuentaDestinatarioId) {
+      const destData = destinatarios.find(d =>
+        d.cuentas_destinatarios?.some((c: any) => c.id === repetirData.cuentaDestinatarioId)
+      )
+      if (destData) {
+        setTimeout(() => setDestinatario(repetirData.cuentaDestinatarioId!, destData.paises?.siglas ?? ''), 0)
+      }
+    }
+
+    // Pre-seleccionar propósito
+    if (repetirData.propositoId) {
+      setTimeout(() => setPago({ propositoId: repetirData.propositoId }), 0)
+    }
+  }
 
   // Helpers
   const getTasa = (from: string, to: string) =>
@@ -258,45 +307,92 @@ export default function TransferirWizard({ monedas, tasas, destinatarios, cuenta
         <div className="card p-6 fade-in space-y-4">
           <h3 className="font-semibold text-gray-900">¿A quién le envías?</h3>
 
-          {destinatarios.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 text-sm mb-3">No tienes contactos aún</p>
-              <a href="/contactos?nuevo=1" className="btn-primary text-sm">Agregar contacto</a>
+          {/* Tabs de método de entrega */}
+          {puntosRetiro.length > 0 && (
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+              <button
+                onClick={() => setMetodoEntrega('banco')}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium transition-all',
+                  metodoEntrega === 'banco'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                )}
+              >
+                Transferencia bancaria
+              </button>
+              <button
+                onClick={() => setMetodoEntrega('pickup')}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium transition-all',
+                  metodoEntrega === 'pickup'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                )}
+              >
+                <MapPin size={13} /> Retiro en efectivo
+              </button>
             </div>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-              {destinatarios.map(d => (
-                <div key={d.id} className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium pt-1">
-                    <span>{d.name} {d.lastname}</span>
-                    {d.favorito && <Star size={12} className="text-amber-400 fill-amber-400" />}
-                    <span className="text-gray-300">·</span>
-                    <span>{d.paises?.nombre_pais}</span>
-                  </div>
-                  {d.cuentas_destinatarios?.map((c: any) => (
-                    <button key={c.id}
-                      onClick={() => setDestinatario(c.id, d.paises?.siglas ?? '')}
-                      className={cn(
-                        'w-full text-left p-3.5 rounded-xl border text-sm transition-all',
-                        state.cuentaDestinatarioId === c.id
-                          ? 'border-brand-500 bg-brand-50'
-                          : 'border-gray-200 hover:border-brand-300 hover:bg-gray-50'
-                      )}
-                    >
-                      <p className="font-medium text-gray-900">{c.bancos?.nombre_banco}</p>
-                      <p className="text-gray-500 text-xs mt-0.5">
-                        {c.tipos_cuentas?.nombre_tipo} · {c.numero_cuenta}
-                      </p>
-                    </button>
+          )}
+
+          {/* Transferencia bancaria */}
+          {metodoEntrega === 'banco' && (
+            <>
+              {destinatarios.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm mb-3">No tienes contactos aún</p>
+                  <a href="/contactos?nuevo=1" className="btn-primary text-sm">Agregar contacto</a>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {destinatarios.map(d => (
+                    <div key={d.id} className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 font-medium pt-1">
+                        <span>{d.name} {d.lastname}</span>
+                        {d.favorito && <Star size={12} className="text-amber-400 fill-amber-400" />}
+                        <span className="text-gray-300">·</span>
+                        <span>{d.paises?.nombre_pais}</span>
+                      </div>
+                      {d.cuentas_destinatarios?.map((c: any) => (
+                        <button key={c.id}
+                          onClick={() => { setDestinatario(c.id, d.paises?.siglas ?? ''); setPuntoRetiroId(null) }}
+                          className={cn(
+                            'w-full text-left p-3.5 rounded-xl border text-sm transition-all',
+                            state.cuentaDestinatarioId === c.id
+                              ? 'border-brand-500 bg-brand-50'
+                              : 'border-gray-200 hover:border-brand-300 hover:bg-gray-50'
+                          )}
+                        >
+                          <p className="font-medium text-gray-900">{c.bancos?.nombre_banco}</p>
+                          <p className="text-gray-500 text-xs mt-0.5">
+                            {c.tipos_cuentas?.nombre_tipo} · {c.numero_cuenta}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
+          )}
+
+          {/* Retiro en efectivo (pick-up) */}
+          {metodoEntrega === 'pickup' && (
+            <PickupSelector
+              puntos={puntosRetiro}
+              selectedId={puntoRetiroId}
+              onSelect={(id) => { setPuntoRetiroId(id); setDestinatario(0, '') }}
+              monedaDestino={state.monedaDestino}
+            />
           )}
 
           <div className="flex gap-3">
             <button onClick={() => setStep(1)} className="btn-secondary flex-1">Atrás</button>
-            <button onClick={() => setStep(3)} disabled={!state.cuentaDestinatarioId} className="btn-primary flex-1">
+            <button
+              onClick={() => setStep(3)}
+              disabled={metodoEntrega === 'banco' ? !state.cuentaDestinatarioId : !puntoRetiroId}
+              className="btn-primary flex-1"
+            >
               Continuar <ChevronRight size={16} className="inline ml-1" />
             </button>
           </div>

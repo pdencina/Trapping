@@ -1,10 +1,11 @@
 // src/app/page.tsx — Landing page pública
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import LandingCalculator from '@/components/landing/LandingCalculator'
 
 export const metadata: Metadata = {
   title: 'Trapping | Envía dinero al exterior fácil y seguro',
-  description: 'Plataforma chilena de envío de remesas a Venezuela, Colombia y más. Rápido, seguro y con las mejores tasas.',
+  description: 'Plataforma chilena de envío de remesas a Venezuela, Colombia, España y más. Rápido, seguro y con las mejores tasas.',
 }
 
 const stats = [
@@ -110,7 +111,7 @@ export default function LandingPage() {
                 <span className="text-brand-600">rápido y seguro</span>
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                Conectamos a la comunidad inmigrante en Chile con sus familias en Venezuela, Colombia y más países. Sin complicaciones, con las mejores tasas.
+                Conectamos a la comunidad inmigrante en Chile con sus familias en Venezuela, Colombia, España y más países. Sin complicaciones, con las mejores tasas.
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href="/register" className="btn-primary text-center text-base px-8 py-3">
@@ -125,44 +126,8 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Calculadora decorativa */}
-            <div className="card p-6 shadow-lg max-w-sm mx-auto lg:mx-0 w-full">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Simulador de envío</p>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Tú envías desde Chile</label>
-                  <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3">
-                    <span className="text-2xl">🇨🇱</span>
-                    <div className="flex-1">
-                      <p className="text-2xl font-bold text-gray-900">$ 100.000</p>
-                      <p className="text-xs text-gray-400">CLP</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 py-1">
-                  <div className="flex-1 h-px bg-gray-200"></div>
-                  <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center text-white text-sm">→</div>
-                  <div className="flex-1 h-px bg-gray-200"></div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Destinatario recibe en Venezuela</label>
-                  <div className="flex items-center gap-2 bg-brand-50 rounded-xl px-4 py-3">
-                    <span className="text-2xl">🇻🇪</span>
-                    <div className="flex-1">
-                      <p className="text-2xl font-bold text-brand-700">Bs. 3.587</p>
-                      <p className="text-xs text-brand-400">VES</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-400 pt-1">
-                  <span>Tasa: 1 CLP = 0.0359 VES</span>
-                  <span>Comisión: 4%</span>
-                </div>
-              </div>
-              <Link href="/register" className="btn-primary w-full text-center mt-5 block text-sm">
-                Crear mi cuenta gratis
-              </Link>
-            </div>
+            {/* Calculadora interactiva con tasas reales */}
+            <LandingCalculator />
           </div>
         </div>
       </section>

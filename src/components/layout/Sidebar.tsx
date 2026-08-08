@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ArrowRightLeft, List, Users,
   Wallet, Calculator, User, Settings, ShieldCheck,
-  Building2, LogOut, ChevronRight,
+  Building2, LogOut, ChevronRight, BarChart3, FileText,
 } from 'lucide-react'
 import { cn } from '@/utils/format'
 import { logoutAction } from '@/lib/actions/auth'
+import NotificationBell from '@/components/shared/NotificationBell'
 import type { Profile } from '@/types/database'
 
 const userNav = [
@@ -22,11 +23,13 @@ const userNav = [
 ]
 
 const adminNav = [
+  { href: '/admin/analytics',    label: 'Analytics',   icon: BarChart3 },
   { href: '/admin/operaciones', label: 'Operaciones', icon: List },
   { href: '/admin/usuarios',    label: 'Usuarios',    icon: Users },
   { href: '/admin/tasas',       label: 'Tasas',       icon: Settings },
   { href: '/admin/bancos',      label: 'Bancos',      icon: Building2 },
   { href: '/admin/cuentas',     label: 'Cuentas',     icon: Wallet },
+  { href: '/admin/logs',        label: 'Audit Log',   icon: FileText },
 ]
 
 export default function Sidebar({ profile }: { profile: Profile }) {
@@ -35,14 +38,15 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
   return (
     <aside className="w-64 bg-brand-50 border-r border-brand-100 flex flex-col h-full flex-shrink-0">
-      {/* Logo */}
-      <div className="px-5 py-6 border-b border-brand-100">
+      {/* Logo + Notifications */}
+      <div className="px-5 py-6 border-b border-brand-100 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-brand-600 rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-sm">T</span>
           </div>
           <span className="font-bold text-gray-900 text-lg tracking-tight">trapping</span>
         </Link>
+        <NotificationBell />
       </div>
 
       {/* Nav */}

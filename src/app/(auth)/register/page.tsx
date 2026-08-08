@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronDown,
   CreditCard, Eye, EyeOff, Lock, Mail, MonitorCheck,
   Phone, QrCode, RefreshCw, ShieldCheck, User,
 } from 'lucide-react'
 import { PhoneInput } from 'react-international-phone'
+import { validarRut, formatRut } from '@/utils/format'
 import 'react-international-phone/style.css'
 
 type FormState = {
@@ -184,9 +185,17 @@ export default function RegisterPage() {
     load()
   }, [])
 
+  // Detectar si el tipo de documento seleccionado es RUT chileno
+  const isRutType = useMemo(() => {
+    const selected = tiposDoc.find(t => String(t.id) === form.documentType)
+    return selected?.nombre_documento?.toLowerCase().includes('rut') ?? false
+  }, [tiposDoc, form.documentType])
+
   const canContinue = form.firstName && form.lastName && form.documentType &&
     form.documentNumber && form.phone && form.email &&
-    form.password.length >= 8 && form.password === form.confirmPassword && form.terms
+    form.password.length >= 8 && form.password === form.confirmPassword && form.terms &&
+    // Si es RUT, debe ser válido
+    (!isRutType || validarRut(form.documentNumber))
 
   const update = (key: keyof FormState, value: string | boolean) =>
     setForm(prev => ({ ...prev, [key]: value }))
@@ -303,9 +312,41 @@ export default function RegisterPage() {
                   <div>
                     <FieldLabel>Número de documento *</FieldLabel>
                     <IconInput icon={<CreditCard size={16} />}>
-                      <input className={`${inputBase}`} placeholder="Ej: 12.345.678-9"
-                        value={form.documentNumber} onChange={e => update('documentNumber', e.target.value)} />
+                      <input
+                        className={`${inputBase} ${
+                          form.documentNumber.length > 3
+                            ? isRutType && validarRut(form.documentNumber)
+                              ? 'border-green-300 focus:border-green-400 focus:ring-green-100'
+                              : isRutType && !validarRut(form.documentNumber)
+                              ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+                              : ''
+                            : ''
+                        }`}
+                        placeholder={isRutType ? 'Ej: 12.345.678-9' : 'Número de documento'}
+                        value={form.documentNumber}
+                        onChange={e => {
+                          const raw = e.target.value
+                          if (isRutType) {
+                            // Auto-formatear RUT mientras escribe
+                            const clean = raw.replace(/[^0-9kK]/g, '')
+                            update('documentNumber', clean.length > 1 ? formatRut(clean) : clean)
+                          } else {
+                            update('documentNumber', raw)
+                          }
+                        }}
+                      />
                     </IconInput>
+                    {/* Feedback de validación RUT */}
+                    {isRutType && form.documentNumber.length > 3 && (
+                      <p className={`mt-1.5 text-xs font-medium ${
+                        validarRut(form.documentNumber) ? 'text-green-600' : 'text-red-500'
+                      }`}>
+                        {validarRut(form.documentNumber)
+                          ? '✓ RUT válido'
+                          : 'RUT inválido — verifica el dígito verificador'
+                        }
+                      </p>
+                    )}
                   </div>
                 </div>
 

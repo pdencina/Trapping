@@ -4,7 +4,7 @@
 
 export type UserRole = 'Admin' | 'User'
 export type ClaseCuenta = 'Persona' | 'Empresa'
-export type MonedaCode = 'CLP' | 'USD' | 'ARS' | 'COP' | 'VES' | 'PAB' | 'PEN'
+export type MonedaCode = 'CLP' | 'USD' | 'ARS' | 'COP' | 'VES' | 'PAB' | 'PEN' | 'EUR'
 export type TipoMovimiento = 'recarga' | 'envio' | 'retiro'
 export type EstadoOperacionBilletera = 'pendiente' | 'aprobado' | 'rechazado'
 
@@ -186,6 +186,25 @@ export type TipoDocumento = Database['public']['Tables']['tipos_documentos']['Ro
 export type TipoCuenta = Database['public']['Tables']['tipos_cuentas']['Row']
 export type EstatusOperacion = Database['public']['Tables']['estatus_operaciones']['Row']
 export type OperacionProposito = Database['public']['Tables']['operaciones_propositos']['Row']
+
+// Tipo para puntos de retiro (pick-up)
+export type PuntoRetiro = {
+  id: number
+  pais_id: number
+  ciudad: string
+  nombre: string
+  direccion: string
+  referencia: string | null
+  horario: string | null
+  telefono: string | null
+  moneda: string
+  monto_minimo: number
+  monto_maximo: number
+  activo: boolean
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
 
 // Estado del wizard
 export interface WizardState {

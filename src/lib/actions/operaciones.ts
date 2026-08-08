@@ -1,8 +1,13 @@
 'use server'
 // src/lib/actions/operaciones.ts
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { generarCodigoOperacion } from '@/utils/format'
+import { notificarOperacionCreada, notificarOperacionCompletada, notificarOperacionRechazada } from '@/lib/emails/notify'
+import { notificarOperacionCreadaInApp, notificarOperacionCompletadaInApp, notificarOperacionRechazadaInApp } from '@/lib/actions/notifications'
+import { whatsappOperacionCreada, whatsappOperacionCompletada, whatsappOperacionRechazada } from '@/lib/whatsapp'
+import { validarLimitesOperacionales } from '@/lib/limites'
+import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
 import type { ActionResult } from './auth'
 import type { Profile, Billetera, Tasa } from '@/types/database'
@@ -62,6 +67,12 @@ export async function crearOperacionAction(payload: {
   const profile = profileData as Pick<Profile, 'validado'> | null
   if (!profile || profile.validado !== 1) {
     return { error: 'Tu cuenta aún no ha sido aprobada.' }
+  }
+
+  // Validar límites operacionales del usuario
+  const limiteCheck = await validarLimitesOperacionales(user.id, parsed.data.monto_origen)
+  if (!limiteCheck.ok) {
+    return { error: limiteCheck.error }
   }
 
   const { data: tasaData, error: tasaError } = await supabase
@@ -190,6 +201,50 @@ export async function crearOperacionAction(payload: {
   revalidatePath('/operaciones')
   revalidatePath('/dashboard')
   revalidatePath('/billetera')
+
+  // Enviar email de confirmación de operación creada (fire-and-forget)
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  if (currentUser?.email) {
+    const { data: profileForEmail } = await supabase
+      .from('profiles').select('name').eq('id', user.id).single()
+    const { data: destInfo } = await supabase
+      .from('cuentas_destinatarios')
+      .select('destinatarios(name, lastname, paises(nombre_pais))')
+      .eq('id', parsed.data.cuenta_destinatario_id)
+      .single()
+
+    const dest = (destInfo as any)?.destinatarios
+    notificarOperacionCreada({
+      email: currentUser.email,
+      nombre: (profileForEmail as any)?.name ?? '',
+      codigoOperacion: codigo,
+      montoOrigen: parsed.data.monto_origen,
+      monedaOrigen: parsed.data.moneda_origen,
+      montoDestino: parsed.data.monto_destino,
+      monedaDestino: parsed.data.moneda_destino,
+      destinatario: `${dest?.name ?? ''} ${dest?.lastname ?? ''}`.trim(),
+      paisDestino: dest?.paises?.nombre_pais ?? '',
+    }).catch(() => {}) // No bloquear si falla el email
+
+    // Notificación in-app
+    notificarOperacionCreadaInApp(user.id, codigo).catch(() => {})
+
+    // WhatsApp (si tiene celular)
+    const { data: profileWa } = await supabase.from('profiles').select('celular').eq('id', user.id).single()
+    if ((profileWa as any)?.celular) {
+      whatsappOperacionCreada({
+        telefono: (profileWa as any).celular,
+        nombre: (profileForEmail as any)?.name ?? '',
+        codigo,
+        montoOrigen: parsed.data.monto_origen,
+        monedaOrigen: parsed.data.moneda_origen,
+        montoDestino: parsed.data.monto_destino,
+        monedaDestino: parsed.data.moneda_destino,
+        destinatario: `${dest?.name ?? ''} ${dest?.lastname ?? ''}`.trim(),
+      }).catch(() => {})
+    }
+  }
+
   return { success: true, codigo }
 }
 
@@ -242,6 +297,93 @@ export async function actualizarEstatusOperacion(
     .update({ estatus_id: estatusId, observaciones: observaciones ?? null })
     .eq('id', operacionId)
   if (error) return { error: error.message }
+
+  // Enviar email de notificación al usuario (solo para completada/rechazada)
+  if (estatusId === 3 || estatusId === 4) {
+    const service = createServiceClient()
+    const { data: op } = await service
+      .from('operaciones')
+      .select(`
+        user_id, codigo_operacion, monto_origen, moneda_origen, monto_destino, moneda_destino, observaciones,
+        cuentas_destinatarios(destinatarios(name, lastname, paises(nombre_pais)))
+      `)
+      .eq('id', operacionId)
+      .single()
+
+    if (op) {
+      const { data: { user: authUser } } = await service.auth.admin.getUserById(op.user_id)
+      const { data: profile } = await service.from('profiles').select('name').eq('id', op.user_id).single()
+
+      const email = authUser?.email
+      const dest = (op as any).cuentas_destinatarios?.destinatarios
+
+      if (email) {
+        const emailData = {
+          email,
+          nombre: (profile as any)?.name ?? '',
+          codigoOperacion: op.codigo_operacion,
+          montoOrigen: op.monto_origen,
+          monedaOrigen: op.moneda_origen,
+          montoDestino: op.monto_destino,
+          monedaDestino: op.moneda_destino,
+          destinatario: `${dest?.name ?? ''} ${dest?.lastname ?? ''}`.trim(),
+          paisDestino: dest?.paises?.nombre_pais ?? '',
+          motivo: op.observaciones,
+        }
+
+        if (estatusId === 4) {
+          notificarOperacionCompletada(emailData).catch(() => {})
+        } else {
+          notificarOperacionRechazada(emailData).catch(() => {})
+        }
+      }
+
+      // Notificación in-app
+      if (estatusId === 4) {
+        notificarOperacionCompletadaInApp(op.user_id, op.codigo_operacion).catch(() => {})
+      } else {
+        notificarOperacionRechazadaInApp(op.user_id, op.codigo_operacion, op.observaciones ?? undefined).catch(() => {})
+      }
+
+      // WhatsApp automático
+      const { data: profileWa } = await service.from('profiles').select('celular, name').eq('id', op.user_id).single()
+      const celular = (profileWa as any)?.celular
+      if (celular) {
+        const dest = (op as any).cuentas_destinatarios?.destinatarios
+        if (estatusId === 4) {
+          whatsappOperacionCompletada({
+            telefono: celular,
+            nombre: (profileWa as any)?.name ?? '',
+            codigo: op.codigo_operacion,
+            montoDestino: op.monto_destino,
+            monedaDestino: op.moneda_destino,
+            destinatario: `${dest?.name ?? ''} ${dest?.lastname ?? ''}`.trim(),
+          }).catch(() => {})
+        } else {
+          whatsappOperacionRechazada({
+            telefono: celular,
+            nombre: (profileWa as any)?.name ?? '',
+            codigo: op.codigo_operacion,
+            motivo: op.observaciones,
+          }).catch(() => {})
+        }
+      }
+    }
+  }
+
+  // Audit log
+  const { data: { user: adminUser } } = await supabase.auth.getUser()
+  if (adminUser) {
+    const actionMap: Record<number, string> = { 2: 'operacion.review', 3: 'operacion.reject', 4: 'operacion.complete' }
+    logAudit({
+      adminId: adminUser.id,
+      action: (actionMap[estatusId] ?? 'operacion.review') as any,
+      resourceType: 'operacion',
+      resourceId: String(operacionId),
+      details: { estatusId, observaciones },
+    }).catch(() => {})
+  }
+
   revalidatePath('/admin/operaciones')
   revalidatePath('/operaciones')
   return { success: true }

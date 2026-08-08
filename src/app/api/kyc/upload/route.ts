@@ -1,8 +1,13 @@
 // src/app/api/kyc/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 uploads por IP cada 10 minutos
+  const rateLimited = checkRateLimit(req, RATE_LIMITS.kyc)
+  if (rateLimited) return rateLimited
+
   const formData = await req.formData()
   const token = formData.get('token') as string
   const side = formData.get('side') as 'front' | 'back' | 'selfie'

@@ -3,7 +3,8 @@ import { getOperacionesUsuario } from '@/lib/actions/operaciones'
 import { formatMoneda, getEstatusLabel } from '@/utils/format'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ArrowRightLeft, FileText } from 'lucide-react'
+import { ArrowRightLeft, ChevronRight, RotateCcw } from 'lucide-react'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Operaciones' }
@@ -18,9 +19,9 @@ export default async function OperacionesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Mis operaciones</h1>
           <p className="text-gray-500 text-sm mt-0.5">{operaciones.length} operaciones totales</p>
         </div>
-        <a href="/transferir" className="btn-primary flex items-center gap-2 text-sm">
+        <Link href="/transferir" className="btn-primary flex items-center gap-2 text-sm">
           <ArrowRightLeft size={15} /> Nueva transferencia
-        </a>
+        </Link>
       </div>
 
       <div className="card overflow-hidden">
@@ -34,7 +35,7 @@ export default async function OperacionesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {['Código', 'Fecha', 'Destinatario', 'País', 'Monto', 'Recibe', 'Estado'].map(h => (
+                  {['Código', 'Fecha', 'Destinatario', 'País', 'Monto', 'Recibe', 'Estado', ''].map(h => (
                     <th key={h} className="text-left text-xs font-medium text-gray-400 px-5 py-3.5">{h}</th>
                   ))}
                 </tr>
@@ -44,8 +45,12 @@ export default async function OperacionesPage() {
                   const { label, color } = getEstatusLabel(op.estatus_id)
                   const dest = op.cuentas_destinatarios?.destinatarios
                   return (
-                    <tr key={op.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-4 font-mono text-xs text-gray-600">{op.codigo_operacion}</td>
+                    <tr key={op.id} className="hover:bg-brand-50/30 transition-colors group">
+                      <td className="px-5 py-4">
+                        <Link href={`/operaciones/${op.id}`} className="font-mono text-xs text-brand-600 hover:text-brand-700 underline-offset-2 hover:underline">
+                          {op.codigo_operacion}
+                        </Link>
+                      </td>
                       <td className="px-5 py-4 text-gray-500 text-xs whitespace-nowrap">
                         {format(new Date(op.created_at), "d MMM yyyy", { locale: es })}
                       </td>
@@ -63,6 +68,20 @@ export default async function OperacionesPage() {
                       </td>
                       <td className="px-5 py-4">
                         <span className={`badge ${color}`}>{label}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1">
+                          <Link
+                            href={`/transferir?repetir=1&moneda_origen=${op.moneda_origen}&moneda_destino=${op.moneda_destino}&monto=${op.monto_origen}&cuenta_destinatario=${op.cuenta_destinatario_id}&proposito=${op.proposito_id}`}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                            title="Repetir operación"
+                          >
+                            <RotateCcw size={14} />
+                          </Link>
+                          <Link href={`/operaciones/${op.id}`} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 group-hover:text-brand-500 transition-colors">
+                            <ChevronRight size={16} />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   )

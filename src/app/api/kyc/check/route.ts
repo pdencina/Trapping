@@ -1,8 +1,13 @@
 // src/app/api/kyc/check/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 
 export async function GET(req: NextRequest) {
+  // Rate limit: 60 requests por minuto
+  const rateLimited = checkRateLimit(req, RATE_LIMITS.api)
+  if (rateLimited) return rateLimited
+
   const token = req.nextUrl.searchParams.get('token')
   if (!token) return NextResponse.json({ error: 'Token requerido' }, { status: 400 })
 

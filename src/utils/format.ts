@@ -17,7 +17,7 @@ export function formatMonto(value: number, decimals = 0): string {
 // Formatea con símbolo de moneda
 export function formatMoneda(value: number, moneda: string): string {
   const simbolos: Record<string, string> = {
-    CLP: '$', USD: 'US$', VES: 'Bs.', COP: 'COL$', ARS: 'AR$', PEN: 'S/', PAB: 'B/.'
+    CLP: '$', USD: 'US$', VES: 'Bs.', COP: 'COL$', ARS: 'AR$', PEN: 'S/', PAB: 'B/.', EUR: '€'
   }
   const simbolo = simbolos[moneda] ?? moneda
   return `${simbolo} ${formatMonto(value, moneda === 'CLP' ? 0 : 2)}`
