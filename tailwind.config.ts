@@ -109,6 +109,10 @@ const config: Config = {
           '0%':   { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        blink: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
       },
       animation: {
         'fade-up':   'fadeUp 0.25s ease-out',
@@ -116,6 +120,7 @@ const config: Config = {
         'slide-in':  'slideIn 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
         'slide-up':  'slideUp 0.3s ease-out',
         'shimmer':   'shimmer 2s infinite linear',
+        'blink':     'blink 1s step-end infinite',
       },
 
       // ── Breakpoints ──────────────────────────────────────────
