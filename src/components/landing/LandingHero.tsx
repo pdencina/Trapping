@@ -3,10 +3,17 @@
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { ArrowRight, Shield, Zap, Globe } from 'lucide-react'
+import TypewriterText from './TypewriterText'
+
+const ROTATING_WORDS = [
+  'VENEZUELA',
+  'COLOMBIA',
+  'ESPAÑA',
+]
 
 export default function LandingHero() {
   return (
-    <section className="relative pt-32 pb-24 px-4 sm:px-6 overflow-hidden">
+    <section className="relative pt-32 pb-24 px-4 sm:px-6 overflow-hidden min-h-[85vh] flex items-center">
       {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white" />
 
@@ -22,102 +29,57 @@ export default function LandingHero() {
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      <div className="relative max-w-6xl mx-auto text-center">
+      <div className="relative max-w-5xl mx-auto w-full text-center">
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-8 border border-brand-100 shadow-sm"
+          className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-brand-700 text-xs font-semibold px-4 py-2 rounded-full mb-10 border border-brand-100 shadow-sm"
         >
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          Plataforma activa — Envíos a Venezuela, Colombia y España
+          Plataforma activa — Envíos desde Chile
         </motion.div>
 
-        {/* Heading con animación word-by-word */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] text-gray-900 mb-6">
-          <motion.span
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-block"
-          >
-            Envía dinero{' '}
-          </motion.span>
+        {/* Heading con typewriter */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mb-6"
+        >
+          {/* Línea 1: texto estático */}
+          <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
+            TU CUENTA PARA ENVIAR A
+          </p>
 
-          <motion.span
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="inline-block"
-          >
-            a tu{' '}
-          </motion.span>
-
-          <motion.span
-            className="text-brand-600 inline-block"
-            initial={{ opacity: 0, scale: 0.8, rotateX: 40 }}
-            animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-            transition={{ duration: 0.7, delay: 0.6, type: 'spring', stiffness: 100 }}
-          >
-            familia
-          </motion.span>
-
-          <motion.span
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.9, type: 'spring', stiffness: 200 }}
-            className="inline-block"
-          >
-            ,
-          </motion.span>
-
-          <br className="hidden sm:block" />
-
-          <motion.span
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.0 }}
-            className="inline-block"
-          >
-            {' '}sin{' '}
-          </motion.span>
-
-          <motion.span
-            className="text-brand-600 inline-block"
-            initial={{ opacity: 0, scale: 0.8, rotateX: 40 }}
-            animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-            transition={{ duration: 0.7, delay: 1.2, type: 'spring', stiffness: 100 }}
-          >
-            complicaciones
-          </motion.span>
-
-          <motion.span
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 1.5, type: 'spring', stiffness: 200 }}
-            className="inline-block"
-          >
-            .
-          </motion.span>
-        </h1>
+          {/* Línea 2: palabra que rota con typewriter */}
+          <div className="h-[1.3em] mt-2 text-5xl sm:text-6xl lg:text-7xl font-black text-brand-600 leading-none tracking-tight">
+            <TypewriterText
+              words={ROTATING_WORDS}
+              typeSpeed={100}
+              deleteSpeed={60}
+              pauseTime={2500}
+            />
+          </div>
+        </motion.div>
 
         {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1.6 }}
-          className="text-lg sm:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed"
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="text-base sm:text-lg text-gray-500 max-w-xl mx-auto mb-10 leading-relaxed"
         >
-          Conectamos a la comunidad inmigrante en Chile con sus seres queridos.
-          Transferencias rápidas, tasas justas y soporte cercano.
+          Mueve tu dinero por el mundo sin comisiones ocultas ni complicaciones.
+          Rápido, seguro y cercano a tu familia.
         </motion.p>
 
         {/* CTAs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.9 }}
+          transition={{ duration: 0.5, delay: 1.0 }}
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
           <Link
@@ -136,8 +98,8 @@ export default function LandingHero() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 2.2, duration: 0.8 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400"
+          transition={{ delay: 1.4, duration: 0.8 }}
+          className="mt-14 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400"
         >
           {[
             { icon: Shield, text: '100% seguro' },

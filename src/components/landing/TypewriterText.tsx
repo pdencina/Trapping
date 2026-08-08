@@ -1,74 +1,71 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface Props {
   words: string[]
-  /** Velocidad de tipeo en ms por caracter */
   typeSpeed?: number
-  /** Velocidad de borrado en ms por caracter */
   deleteSpeed?: number
-  /** Pausa después de escribir la palabra completa */
   pauseTime?: number
   className?: string
 }
 
 /**
- * Efecto typewriter con cursor blink — escribe y borra palabras en loop.
- * Similar al vue-typer de Global66.
+ * Typewriter con cursor blink — escribe y borra palabras en loop.
+ * Estilo Global66 / vue-typer.
  */
 export default function TypewriterText({
   words,
-  typeSpeed = 80,
+  typeSpeed = 90,
   deleteSpeed = 50,
-  pauseTime = 2000,
+  pauseTime = 2200,
   className = '',
 }: Props) {
-  const [currentWordIndex, setCurrentWordIndex] = useState(0)
-  const [displayText, setDisplayText] = useState('')
+  const [text, setText] = useState('')
+  const [wordIndex, setWordIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
-
-  const currentWord = words[currentWordIndex]
-
-  const tick = useCallback(() => {
-    if (isPaused) return
-
-    if (!isDeleting) {
-      // Escribiendo
-      if (displayText.length < currentWord.length) {
-        setDisplayText(currentWord.slice(0, displayText.length + 1))
-      } else {
-        // Palabra completa — pausar antes de borrar
-        setIsPaused(true)
-        setTimeout(() => {
-          setIsPaused(false)
-          setIsDeleting(true)
-        }, pauseTime)
-      }
-    } else {
-      // Borrando
-      if (displayText.length > 0) {
-        setDisplayText(displayText.slice(0, -1))
-      } else {
-        // Borrado completo — siguiente palabra
-        setIsDeleting(false)
-        setCurrentWordIndex((prev) => (prev + 1) % words.length)
-      }
-    }
-  }, [displayText, isDeleting, isPaused, currentWord, words.length, pauseTime])
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    const speed = isDeleting ? deleteSpeed : typeSpeed
-    const timer = setTimeout(tick, speed)
-    return () => clearTimeout(timer)
-  }, [tick, isDeleting, typeSpeed, deleteSpeed])
+    const currentWord = words[wordIndex]
+
+    const handleType = () => {
+      if (!isDeleting) {
+        // Escribiendo
+        if (text.length < currentWord.length) {
+          setText(currentWord.slice(0, text.length + 1))
+          timeoutRef.current = setTimeout(handleType, typeSpeed)
+        } else {
+          // Palabra completa, pausar y luego borrar
+          timeoutRef.current = setTimeout(() => {
+            setIsDeleting(true)
+          }, pauseTime)
+        }
+      } else {
+        // Borrando
+        if (text.length > 0) {
+          setText(text.slice(0, -1))
+          timeoutRef.current = setTimeout(handleType, deleteSpeed)
+        } else {
+          // Borrado completo, siguiente palabra
+          setIsDeleting(false)
+          setWordIndex((prev) => (prev + 1) % words.length)
+        }
+      }
+    }
+
+    timeoutRef.current = setTimeout(handleType, isDeleting ? deleteSpeed : typeSpeed)
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [text, isDeleting, wordIndex, words, typeSpeed, deleteSpeed, pauseTime])
 
   return (
-    <span className={`inline-block ${className}`}>
-      <span>{displayText}</span>
+    <span className={className}>
+      {text}
       <span
-        className="inline-block w-[3px] h-[1em] bg-brand-600 ml-[2px] align-middle animate-blink"
+        className="inline-block w-[4px] h-[0.85em] bg-brand-600 ml-1 align-middle animate-blink rounded-sm"
         aria-hidden="true"
       />
     </span>
