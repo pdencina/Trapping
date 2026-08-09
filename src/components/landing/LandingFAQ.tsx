@@ -33,9 +33,9 @@ function FAQItem({ q, a, isOpen, onToggle }: { q: string; a: string; isOpen: boo
     <div className="card overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50/50 transition-colors"
+        className="w-full flex items-center justify-between p-4 sm:p-6 text-left hover:bg-gray-50/50 transition-colors"
       >
-        <h3 className="font-semibold text-gray-900 pr-4">{q}</h3>
+        <h3 className="font-semibold text-gray-900 pr-4 text-sm sm:text-base">{q}</h3>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
@@ -52,7 +52,7 @@ function FAQItem({ q, a, isOpen, onToggle }: { q: string; a: string; isOpen: boo
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            <p className="text-sm text-gray-500 leading-relaxed px-6 pb-6">
+            <p className="text-sm text-gray-500 leading-relaxed px-4 sm:px-6 pb-4 sm:pb-6">
               {a}
             </p>
           </motion.div>
@@ -66,13 +66,13 @@ export default function LandingFAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
-    <section className="py-24 px-4 sm:px-6">
+    <section className="py-16 sm:py-24 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
-        <AnimatedSection className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">
+        <AnimatedSection className="text-center mb-10 sm:mb-14 px-2">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-3 sm:mb-4">
             Preguntas frecuentes
           </h2>
-          <p className="text-gray-500">Todo lo que necesitas saber antes de empezar.</p>
+          <p className="text-gray-500 text-base sm:text-lg">Todo lo que necesitas saber antes de empezar.</p>
         </AnimatedSection>
 
         <div className="space-y-3">

@@ -59,7 +59,7 @@ export default function LandingCalculator({ tasas = [] }: Props) {
   }
 
   return (
-    <div className="card p-6 shadow-lg max-w-sm mx-auto lg:mx-0 w-full">
+    <div className="card p-5 sm:p-6 shadow-lg w-full max-w-sm">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
         Simulador de envío
       </p>

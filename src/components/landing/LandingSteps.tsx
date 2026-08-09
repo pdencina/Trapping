@@ -19,18 +19,18 @@ export default function LandingSteps() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section className="py-24 px-4 sm:px-6 bg-gray-50/50" ref={ref}>
+    <section className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50/50" ref={ref}>
       <div className="max-w-5xl mx-auto">
-        <AnimatedSection className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">
+        <AnimatedSection className="text-center mb-10 sm:mb-16 px-2">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-3 sm:mb-4">
             Cómo funciona
           </h2>
-          <p className="text-gray-500 text-lg">
+          <p className="text-gray-500 text-base sm:text-lg">
             En 4 simples pasos, tu dinero llega a donde lo necesitas.
           </p>
         </AnimatedSection>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {steps.map((s, i) => (
             <motion.div
               key={s.title}
@@ -39,18 +39,18 @@ export default function LandingSteps() {
               transition={{ duration: 0.5, delay: i * 0.15 }}
               className="relative"
             >
-              <div className="card p-6 text-center h-full">
+              <div className="card p-4 sm:p-6 text-center h-full">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={isInView ? { scale: 1 } : {}}
                   transition={{ delay: i * 0.15 + 0.3, type: 'spring', stiffness: 200 }}
-                  className={`w-12 h-12 ${s.color} text-white rounded-2xl flex items-center justify-center mx-auto mb-4`}
+                  className={`w-10 sm:w-12 h-10 sm:h-12 ${s.color} text-white rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4`}
                 >
-                  <s.icon size={22} />
+                  <s.icon size={20} />
                 </motion.div>
-                <div className="text-xs font-bold text-brand-600 mb-2">PASO {i + 1}</div>
-                <h3 className="font-bold text-gray-900 mb-2">{s.title}</h3>
-                <p className="text-sm text-gray-500">{s.desc}</p>
+                <div className="text-[10px] sm:text-xs font-bold text-brand-600 mb-1 sm:mb-2">PASO {i + 1}</div>
+                <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">{s.title}</h3>
+                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">{s.desc}</p>
               </div>
 
               {/* Connector arrow */}
