@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
 
@@ -29,45 +28,47 @@ export default function LandingNavbar() {
           </Link>
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Mobile hamburger button */}
         <button
+          type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="sm:hidden w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors"
+          className="sm:hidden w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors relative z-[60]"
           aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
         >
           {isOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="sm:hidden bg-white border-b border-gray-100 overflow-hidden"
-          >
-            <div className="px-4 py-4 space-y-2">
+      {/* Mobile menu — sin AnimatePresence para evitar issues */}
+      {isOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 sm:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* Menu panel */}
+          <div className="fixed top-16 left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50 sm:hidden animate-fade-in">
+            <div className="px-4 py-5 space-y-3">
               <Link
                 href="/login"
                 onClick={() => setIsOpen(false)}
-                className="block w-full text-center py-3 px-4 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="block w-full text-center py-3.5 px-4 rounded-xl text-sm font-medium text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors"
               >
                 Iniciar sesión
               </Link>
               <Link
                 href="/register"
                 onClick={() => setIsOpen(false)}
-                className="block w-full text-center py-3 px-4 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
+                className="block w-full text-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors"
               >
                 Registrarme gratis
               </Link>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </>
+      )}
     </nav>
   )
 }

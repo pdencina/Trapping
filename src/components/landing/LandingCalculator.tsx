@@ -46,11 +46,11 @@ export default function LandingCalculator({ tasas = [] }: Props) {
   // Si no hay tasas, mostrar versión estática
   if (tasas.length === 0) {
     return (
-      <div className="card p-6 shadow-lg max-w-sm mx-auto lg:mx-0 w-full">
+      <div className="card p-5 sm:p-6 shadow-lg w-full max-w-sm">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
           Simulador de envío
         </p>
-        <div className="text-center py-8">
+        <div className="text-center py-6 sm:py-8">
           <p className="text-sm text-gray-500 mb-4">Regístrate para ver tasas en tiempo real</p>
           <Link href="/register" className="btn-primary text-sm">Crear cuenta gratis</Link>
         </div>

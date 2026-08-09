@@ -7,10 +7,10 @@ import TypewriterText from './TypewriterText'
 
 const ROTATING_PHRASES = [
   'rápido y seguro',
-  'sin comisiones ocultas',
+  'sin complicaciones',
   'a tu familia',
-  'con las mejores tasas',
-  'desde tu celular',
+  'con mejor tasa',
+  'en minutos',
 ]
 
 export default function LandingHero() {
@@ -56,7 +56,7 @@ export default function LandingHero() {
           </h1>
 
           {/* Línea 2: frase que rota con typewriter */}
-          <div className="h-[1.3em] sm:h-[1.4em] mt-2 sm:mt-3 text-[1.75rem] xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-600 leading-tight tracking-tight">
+          <div className="min-h-[1.3em] mt-2 sm:mt-3 text-[1.75rem] xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-600 leading-tight tracking-tight">
             <TypewriterText
               words={ROTATING_PHRASES}
               typeSpeed={80}

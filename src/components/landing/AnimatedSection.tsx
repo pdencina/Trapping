@@ -47,8 +47,8 @@ export function AnimatedCounter({ value, label }: { value: string; label: string
       transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
       className="text-center"
     >
-      <p className="text-3xl sm:text-4xl font-extrabold text-white mb-1">{value}</p>
-      <p className="text-brand-200 text-sm">{label}</p>
+      <p className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white mb-0.5 sm:mb-1">{value}</p>
+      <p className="text-brand-200 text-xs sm:text-sm">{label}</p>
     </motion.div>
   )
 }
